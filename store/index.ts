@@ -1,5 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
 import createSagaMiddleware from "redux-saga";
+import authReducer from "./authSlice";
 import cartReducer from "./cartSlice";
 import rootSaga from "./sagas";
 import themeReducer from "./themeSlice";
@@ -10,9 +11,10 @@ export const store = configureStore({
   reducer: {
     cart: cartReducer,
     theme: themeReducer,
+    auth: authReducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({ thunk: false }).concat(sagaMiddleware),
+    getDefaultMiddleware().concat(sagaMiddleware),
 });
 
 sagaMiddleware.run(rootSaga);

@@ -1,6 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
+  ActivityIndicator,
   ImageBackground,
   Pressable,
   StyleSheet,
@@ -9,7 +10,9 @@ import {
   useColorScheme,
 } from "react-native";
 
+import { useEffect } from "react";
 import { AppConfig } from "../config/config";
+import { loadUserFromStorage } from "../store/authSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { toggleTheme } from "../store/themeSlice";
 import { getTheme } from "../theme";
@@ -18,10 +21,36 @@ export default function Home() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const mode = useAppSelector((state) => state.theme.mode);
+  const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
+  const loading = useAppSelector((state) => state.auth.loading);
   const system = useColorScheme() ?? "light";
   const resolvedMode = mode === "light" || mode === "dark" ? mode : system;
 
   const theme = getTheme(AppConfig.flavor, resolvedMode);
+
+  // Load user from storage and redirect if logged in
+  useEffect(() => {
+    dispatch(loadUserFromStorage());
+  }, [dispatch]);
+
+  // Redirect to menu if already logged in
+  useEffect(() => {
+    if (!loading && isLoggedIn) {
+      router.replace("/menu");
+    }
+  }, [loading, isLoggedIn, router]);
+
+  const handleOrderNow = () => {
+    router.push("/order");
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
@@ -51,7 +80,7 @@ export default function Home() {
 
           <Pressable
             style={[styles.cta, { backgroundColor: theme.primary }]}
-            onPress={() => router.push("/order")}
+            onPress={handleOrderNow}
           >
             <Text style={styles.ctaText}>Order Now</Text>
           </Pressable>
@@ -71,6 +100,11 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   hero: {
     height: "100%",
     justifyContent: "flex-end",
@@ -98,3 +132,4 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
+

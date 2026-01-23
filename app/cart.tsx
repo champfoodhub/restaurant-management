@@ -43,7 +43,7 @@ export default function CartPage() {
         </Text>
 
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => router.push("/menu")}
           style={[
             styles.backBtn,
             { backgroundColor: theme.primary },
@@ -244,3 +244,4 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 });
+
