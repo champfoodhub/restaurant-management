@@ -1,12 +1,16 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useColorScheme } from "react-native";
+import { Provider as ReduxProvider } from "react-redux";
 
-import { CartProvider } from "../context/CartContext";
-import { ThemeModeProvider, useThemeMode } from "../context/ThemeContext";
+import { store } from "../store";
+import { useAppSelector } from "../store/hooks";
 
 function NavigationWrapper() {
-  const { resolvedMode } = useThemeMode();
+  const mode = useAppSelector((state) => state.theme.mode);
+  const system = useColorScheme() ?? "light";
+  const resolvedMode = mode === "light" || mode === "dark" ? mode : system;
 
   return (
     <ThemeProvider
@@ -27,10 +31,8 @@ function NavigationWrapper() {
 
 export default function RootLayout() {
   return (
-    <ThemeModeProvider>
-      <CartProvider>
-        <NavigationWrapper />
-      </CartProvider>
-    </ThemeModeProvider>
+    <ReduxProvider store={store}>
+      <NavigationWrapper />
+    </ReduxProvider>
   );
 }

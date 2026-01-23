@@ -6,15 +6,20 @@ import {
   StyleSheet,
   Text,
   View,
+  useColorScheme,
 } from "react-native";
 
 import { AppConfig } from "../config/config";
-import { useThemeMode } from "../context/ThemeContext";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { toggleTheme } from "../store/themeSlice";
 import { getTheme } from "../theme";
 
 export default function Home() {
   const router = useRouter();
-  const { resolvedMode, toggle } = useThemeMode();
+  const dispatch = useAppDispatch();
+  const mode = useAppSelector((state) => state.theme.mode);
+  const system = useColorScheme() ?? "light";
+  const resolvedMode = mode === "light" || mode === "dark" ? mode : system;
 
   const theme = getTheme(AppConfig.flavor, resolvedMode);
 
@@ -51,7 +56,10 @@ export default function Home() {
             <Text style={styles.ctaText}>Order Now</Text>
           </Pressable>
 
-          <Pressable onPress={toggle} style={{ marginTop: 12 }}>
+          <Pressable
+            onPress={() => dispatch(toggleTheme())}
+            style={{ marginTop: 12 }}
+          >
             <Text style={{ color: "#FFF", opacity: 0.7 }}>
               Toggle {resolvedMode === "dark" ? "Light" : "Dark"}
             </Text>

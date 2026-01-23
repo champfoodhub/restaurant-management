@@ -2,17 +2,17 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
   FlatList,
-  Pressable, // ✅ REQUIRED
+  Pressable,
   StyleSheet,
   Text,
-  View
+  View,
+  useColorScheme,
 } from "react-native";
-;
-
 
 import { AppConfig } from "../config/config";
-import { useCart } from "../context/CartContext";
-import { useThemeMode } from "../context/ThemeContext";
+import { addItem, removeItem } from "../store/cartSlice";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { toggleTheme } from "../store/themeSlice";
 import { getTheme } from "../theme";
 
 const MENU = [
@@ -23,8 +23,11 @@ const MENU = [
 ];
 
 export default function OrderPage() {
-  const { items, addItem, removeItem } = useCart();
-  const { resolvedMode } = useThemeMode();
+  const dispatch = useAppDispatch();
+  const items = useAppSelector((state) => state.cart.items);
+  const mode = useAppSelector((state) => state.theme.mode);
+  const system = useColorScheme() ?? "light";
+  const resolvedMode = mode === "light" || mode === "dark" ? mode : system;
   const router = useRouter();
 
   const theme = getTheme(AppConfig.flavor, resolvedMode);
@@ -58,7 +61,7 @@ export default function OrderPage() {
 
               <View style={styles.controls}>
                 <Pressable
-                  onPress={() => removeItem(item.id)}
+                  onPress={() => dispatch(removeItem(item.id))}
                   style={[
                     styles.circle,
                     { backgroundColor: theme.primary, opacity: qty === 0 ? 0.3 : 1 },
@@ -72,7 +75,7 @@ export default function OrderPage() {
                 </Text>
 
                 <Pressable
-                  onPress={() => addItem(item)}
+                  onPress={() => dispatch(addItem(item))}
                   style={[
                     styles.circle,
                     { backgroundColor: theme.primary },
@@ -95,7 +98,17 @@ export default function OrderPage() {
             <Text style={styles.cartText}>
               {totalItems} item{totalItems > 1 ? "s" : ""} added
             </Text>
-            <Text style={styles.cartCTA}>View Cart →</Text>
+            <View style={{ alignItems: "flex-end" }}>
+              <Pressable
+                onPress={() => dispatch(toggleTheme())}
+                style={{ marginBottom: 4 }}
+              >
+                <Text style={{ color: "#FFF", opacity: 0.7, fontSize: 10 }}>
+                  Toggle {resolvedMode === "dark" ? "Light" : "Dark"}
+                </Text>
+              </Pressable>
+              <Text style={styles.cartCTA}>View Cart →</Text>
+            </View>
           </LinearGradient>
         </Pressable>
       )}

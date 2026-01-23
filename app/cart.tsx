@@ -6,17 +6,22 @@ import {
   StyleSheet,
   Text,
   View,
+  useColorScheme,
 } from "react-native";
 
 import { AppConfig } from "../config/config";
-import { useCart } from "../context/CartContext";
-import { useThemeMode } from "../context/ThemeContext";
+import { addItem, clearCart, removeItem } from "../store/cartSlice";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { toggleTheme } from "../store/themeSlice";
 import { getTheme } from "../theme";
 
 export default function CartPage() {
   const router = useRouter();
-  const { items, addItem, removeItem, clearCart } = useCart();
-  const { resolvedMode } = useThemeMode();
+  const dispatch = useAppDispatch();
+  const items = useAppSelector((state) => state.cart.items);
+  const mode = useAppSelector((state) => state.theme.mode);
+  const system = useColorScheme() ?? "light";
+  const resolvedMode = mode === "light" || mode === "dark" ? mode : system;
 
   const theme = getTheme(AppConfig.flavor, resolvedMode);
 
@@ -46,6 +51,15 @@ export default function CartPage() {
         >
           <Text style={styles.backText}>Browse Menu</Text>
         </Pressable>
+
+        <Pressable
+          onPress={() => dispatch(toggleTheme())}
+          style={{ marginTop: 16 }}
+        >
+          <Text style={{ color: theme.text, opacity: 0.7 }}>
+            Toggle {resolvedMode === "dark" ? "Light" : "Dark"}
+          </Text>
+        </Pressable>
       </View>
     );
   }
@@ -72,7 +86,7 @@ export default function CartPage() {
 
             <View style={styles.controls}>
               <Pressable
-                onPress={() => removeItem(item.id)}
+                onPress={() => dispatch(removeItem(item.id))}
                 style={[styles.circle, { backgroundColor: theme.primary }]}
               >
                 <Text style={styles.controlText}>−</Text>
@@ -83,7 +97,7 @@ export default function CartPage() {
               </Text>
 
               <Pressable
-                onPress={() => addItem(item)}
+                onPress={() => dispatch(addItem(item))}
                 style={[styles.circle, { backgroundColor: theme.primary }]}
               >
                 <Text style={styles.controlText}>+</Text>
@@ -103,14 +117,24 @@ export default function CartPage() {
           <Text style={styles.totalAmount}>₹{total}</Text>
         </View>
 
-        <Pressable
-          onPress={() => {
-            clearCart();
-            router.replace("/");
-          }}
-        >
-          <Text style={styles.checkoutText}>Checkout →</Text>
-        </Pressable>
+        <View style={{ alignItems: "flex-end" }}>
+          <Pressable
+            onPress={() => dispatch(toggleTheme())}
+            style={{ marginBottom: 8 }}
+          >
+            <Text style={{ color: "#FFF", opacity: 0.7, fontSize: 12 }}>
+              Toggle {resolvedMode === "dark" ? "Light" : "Dark"}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              dispatch(clearCart());
+              router.replace("/");
+            }}
+          >
+            <Text style={styles.checkoutText}>Checkout →</Text>
+          </Pressable>
+        </View>
       </LinearGradient>
     </View>
   );
