@@ -1,12 +1,16 @@
 export const HQTheme = {
   dark: {
-    background: "#1E293B",
-    primary: "#3B82F6",
-    text: "#E5E7EB",
+    background: "#0B0B0B",
+    primary: "#7C3AED",
+    accent: "#A78BFA",
+    text: "#FFFFFF",
+    muted: "#4C1D95",
   },
   light: {
-    background: "#EFF6FF",
-    primary: "#60A5FA",
-    text: "#020617",
+    background: "#F5F3FF",
+    primary: "#7C3AED",
+    accent: "#C4B5FD",
+    text: "#1E1B4B",
+    muted: "#EDE9FE",
   },
 };

@@ -1,33 +1,36 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import "react-native-reanimated";
 
-import { ThemeProvider as ThemeProviderCustom, useThemeMode } from "../context/ThemeContext";
-
-export const unstable_settings = {
-  anchor: "(tabs)",
-};
+import { CartProvider } from "../context/CartContext";
+import { ThemeModeProvider, useThemeMode } from "../context/ThemeContext";
 
 function NavigationWrapper() {
-  const themeMode = useThemeMode();
-  const resolvedMode =
-    (themeMode as any).resolvedMode ?? (themeMode as any).mode ?? "light";
+  const { resolvedMode } = useThemeMode();
 
   return (
-    <ThemeProvider value={resolvedMode === "dark" ? DarkTheme : DefaultTheme}>
+    <ThemeProvider
+      value={resolvedMode === "dark" ? DarkTheme : DefaultTheme}
+    >
       <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="order" options={{ title: "Menu" }} />
+        <Stack.Screen name="cart" options={{ title: "Cart" }} />
       </Stack>
-      <StatusBar style={resolvedMode === "dark" ? "light" : "dark"} />
+
+      <StatusBar
+        style={resolvedMode === "dark" ? "light" : "dark"}
+      />
     </ThemeProvider>
   );
 }
 
 export default function RootLayout() {
   return (
-    <ThemeProviderCustom>
-      <NavigationWrapper />
-    </ThemeProviderCustom>
+    <ThemeModeProvider>
+      <CartProvider>
+        <NavigationWrapper />
+      </CartProvider>
+    </ThemeModeProvider>
   );
 }

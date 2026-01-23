@@ -5,21 +5,28 @@ type ThemeMode = "light" | "dark";
 
 type ThemeContextType = {
   mode: ThemeMode;
+  resolvedMode: ThemeMode;
   toggle: () => void;
 };
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const systemScheme = useColorScheme() || "light";
-  const [mode, setMode] = useState<ThemeMode>(systemScheme);
+export function ThemeModeProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const system = useColorScheme();
+  const [mode, setMode] = useState<ThemeMode>("light");
 
-  const toggle = () => {
+  const resolvedMode: ThemeMode =
+    mode === "light" || mode === "dark" ? mode : system ?? "light";
+
+  const toggle = () =>
     setMode((prev) => (prev === "light" ? "dark" : "light"));
-  };
 
   return (
-    <ThemeContext.Provider value={{ mode, toggle }}>
+    <ThemeContext.Provider value={{ mode, resolvedMode, toggle }}>
       {children}
     </ThemeContext.Provider>
   );
@@ -27,6 +34,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 export function useThemeMode() {
   const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error("useThemeMode must be used inside ThemeProvider");
+  if (!ctx) {
+    throw new Error("useThemeMode must be used inside ThemeModeProvider");
+  }
   return ctx;
 }

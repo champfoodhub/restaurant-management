@@ -1,12 +1,16 @@
 export const BranchTheme = {
   dark: {
-    background: "#3B0A2A",
-    primary: "#C026D3",
-    text: "#FAE8FF",
+    background: "#0B0B0B",
+    primary: "#3B82F6",
+    accent: "#93C5FD",
+    text: "#FFFFFF",
+    muted: "#1E3A8A",
   },
   light: {
-    background: "#FFFFFF",
-    primary: "#E879F9",
-    text: "#2E1065",
+    background: "#EFF6FF",
+    primary: "#3B82F6",
+    accent: "#BFDBFE",
+    text: "#0F172A",
+    muted: "#DBEAFE",
   },
 };

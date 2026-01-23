@@ -1,12 +1,16 @@
 export const UserTheme = {
   dark: {
-    background: "#3F1D1D",
-    primary: "#DC2626",
-    text: "#FEE2E2",
+    background: "#0B0B0B",
+    primary: "#E11D48",
+    accent: "#FB7185",
+    text: "#FFFFFF",
+    muted: "#9F1239",
   },
   light: {
-    background: "#FFF1F2",
-    primary: "#EF4444",
-    text: "#450A0A",
+    background: "#FFF5F7",
+    primary: "#E11D48",
+    accent: "#FDA4AF",
+    text: "#1F2937",
+    muted: "#FFE4E6",
   },
 };
