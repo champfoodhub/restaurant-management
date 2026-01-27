@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import React, { memo, useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -30,12 +30,81 @@ interface FormData {
   email: string;
 }
 
-export default function OrderPage() {
+// Memoized form input component to reduce re-renders
+const FormInput = memo(({ 
+  label, 
+  value, 
+  onChangeText, 
+  placeholder, 
+  placeholderTextColor, 
+  keyboardType, 
+  maxLength, 
+  multiline, 
+  style, 
+  theme 
+}: any) => (
+  <View style={styles.inputGroup}>
+    <Text style={[styles.label, { color: theme.text }]}>
+      {label}
+    </Text>
+    <TextInput
+      style={[styles.input, { backgroundColor: theme.muted, color: theme.text }, style]}
+      placeholder={placeholder}
+      placeholderTextColor={placeholderTextColor}
+      value={value}
+      onChangeText={onChangeText}
+      keyboardType={keyboardType}
+      maxLength={maxLength}
+      multiline={multiline}
+    />
+  </View>
+));
+
+// Memoized initial view component
+const OrderInitialView = memo(({ theme, onOrderPress }: { theme: any; onOrderPress: () => void }) => (
+  <View style={{ flex: 1, backgroundColor: theme.background }}>
+    <LinearGradient
+      colors={[
+        theme.primary + "20",
+        theme.accent + "10",
+      ]}
+      style={StyleSheet.absoluteFill}
+    />
+    
+    <View style={styles.orderContainer}>
+      <View style={styles.orderCard}>
+        <View style={[styles.iconContainer, { backgroundColor: theme.primary }]}>
+          <Ionicons name="restaurant-outline" size={48} color="#FFF" />
+        </View>
+        
+        <Text style={[styles.orderTitle, { color: theme.text }]}>
+          Ready to Order?
+        </Text>
+        
+        <Text style={[styles.orderSubtitle, { color: theme.text + "80" }]}>
+          Please fill in your details to get started with your food order.
+        </Text>
+
+        <Pressable
+          style={[styles.orderButton, { backgroundColor: theme.primary }]}
+          onPress={onOrderPress}
+        >
+          <Text style={styles.orderButtonText}>Order Now</Text>
+          <Ionicons name="arrow-forward" size={20} color="#FFF" style={{ marginLeft: 8 }} />
+        </Pressable>
+      </View>
+    </View>
+  </View>
+));
+
+// Main component
+function OrderPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const mode = useAppSelector((state) => state.theme.mode);
   const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
   const loading = useAppSelector((state) => state.auth.loading);
+  const user = useAppSelector((state) => state.auth.user);
   const system = useColorScheme() ?? "light";
   const resolvedMode = mode === "light" || mode === "dark" ? mode : system;
 
@@ -57,9 +126,6 @@ export default function OrderPage() {
     dispatch(loadUserFromStorage() as any);
   }, [dispatch]);
 
-  // Get user from store at top level (hooks must be called at top level)
-  const user = useAppSelector((state) => state.auth.user);
-
   // Update form with loaded user data
   useEffect(() => {
     if (user) {
@@ -75,17 +141,21 @@ export default function OrderPage() {
   }, [user]);
 
   // If logged in, redirect to menu
+  // Using timeout to prevent Android navigation crash
   useEffect(() => {
     if (!loading && isLoggedIn) {
-      router.replace("/menu");
+      const timer = setTimeout(() => {
+        router.replace("/menu");
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [loading, isLoggedIn, router]);
 
-  const handleInputChange = (field: keyof FormData, value: string) => {
+  const handleInputChange = useCallback((field: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-  };
+  }, []);
 
-  const validateForm = (): boolean => {
+  const validateForm = useCallback((): boolean => {
     if (!formData.firstName.trim()) {
       Alert.alert("Error", "First name is required");
       return false;
@@ -111,35 +181,24 @@ export default function OrderPage() {
       return false;
     }
     return true;
-  };
+  }, [formData]);
 
-  const handleOrderNow = async () => {
+  const handleSubmit = useCallback(async () => {
     if (!validateForm()) return;
 
     setIsSubmitting(true);
     try {
       await dispatch(saveUserToStorage(formData) as any);
-      router.replace("/menu");
-    } catch (error) {
-      Alert.alert("Error", "Failed to save order details");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleSignup = async () => {
-    if (!validateForm()) return;
-
-    setIsSubmitting(true);
-    try {
-      await dispatch(saveUserToStorage(formData) as any);
-      router.replace("/menu");
+      // Use timeout to prevent Android navigation crash
+      setTimeout(() => {
+        router.replace("/menu");
+      }, 100);
     } catch (error) {
       Alert.alert("Error", "Failed to signup");
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [dispatch, formData, router, validateForm]);
 
   if (loading) {
     return (
@@ -151,41 +210,7 @@ export default function OrderPage() {
 
   // Show form only after clicking Order Now
   if (!showForm) {
-    return (
-      <View style={{ flex: 1, backgroundColor: theme.background }}>
-        <LinearGradient
-          colors={[
-            theme.primary + "20",
-            theme.accent + "10",
-          ]}
-          style={StyleSheet.absoluteFill}
-        />
-        
-        <View style={styles.orderContainer}>
-          <View style={styles.orderCard}>
-            <View style={[styles.iconContainer, { backgroundColor: theme.primary }]}>
-              <Ionicons name="restaurant-outline" size={48} color="#FFF" />
-            </View>
-            
-            <Text style={[styles.orderTitle, { color: theme.text }]}>
-              Ready to Order?
-            </Text>
-            
-            <Text style={[styles.orderSubtitle, { color: theme.text + "80" }]}>
-              Please fill in your details to get started with your food order.
-            </Text>
-
-            <Pressable
-              style={[styles.orderButton, { backgroundColor: theme.primary }]}
-              onPress={() => setShowForm(true)}
-            >
-              <Text style={styles.orderButtonText}>Order Now</Text>
-              <Ionicons name="arrow-forward" size={20} color="#FFF" style={{ marginLeft: 8 }} />
-            </Pressable>
-          </View>
-        </View>
-      </View>
-    );
+    return <OrderInitialView theme={theme} onOrderPress={() => setShowForm(true)} />;
   }
 
   return (
@@ -199,7 +224,7 @@ export default function OrderPage() {
             <Ionicons name="arrow-back" size={24} color={theme.text} />
           </Pressable>
           <Text style={[styles.title, { color: theme.text }]}>
-            Enter Your Details
+            Sign Up
           </Text>
         </View>
 
@@ -294,28 +319,17 @@ export default function OrderPage() {
             />
           </View>
 
-          {/* Order Now Button */}
+          {/* Sign Up Button */}
           <Pressable
             style={[styles.orderButton, { backgroundColor: theme.primary }]}
-            onPress={handleOrderNow}
+            onPress={handleSubmit}
             disabled={isSubmitting}
           >
             {isSubmitting ? (
               <ActivityIndicator color="#FFF" />
             ) : (
-              <Text style={styles.orderButtonText}>Order Now</Text>
+              <Text style={styles.orderButtonText}>Sign Up</Text>
             )}
-          </Pressable>
-
-          {/* Sign Up Button */}
-          <Pressable
-            style={[styles.signupButton, { borderColor: theme.primary }]}
-            onPress={handleSignup}
-            disabled={isSubmitting}
-          >
-            <Text style={[styles.signupButtonText, { color: theme.primary }]}>
-              Sign Up
-            </Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -402,16 +416,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     fontSize: 16,
   },
-  signupButton: {
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: "center",
-    borderWidth: 2,
-    marginTop: 8,
-  },
-  signupButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
 });
+
+// Export memoized component to prevent unnecessary re-renders
+export default memo(OrderPage);
 

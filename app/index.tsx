@@ -34,9 +34,14 @@ export default function Home() {
   }, [dispatch]);
 
   // Redirect to menu if already logged in
+  // Using a timeout to ensure views are settled before navigation
+  // This prevents the Android "specified child already has a parent" crash
   useEffect(() => {
     if (!loading && isLoggedIn) {
-      router.replace("/menu");
+      const timer = setTimeout(() => {
+        router.replace("/menu");
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [loading, isLoggedIn, router]);
 

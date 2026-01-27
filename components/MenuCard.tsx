@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from "react-native";
-import { useCart } from "../context/CartContext";
+import { addItem, removeItem } from "../store/cartSlice";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
 
 export function MenuCard({
   id,
@@ -12,7 +13,8 @@ export function MenuCard({
   price: number;
   theme: any;
 }) {
-  const { items, addItem, removeItem } = useCart();
+  const dispatch = useAppDispatch();
+  const items = useAppSelector((state) => state.cart.items);
   const item = items.find((i) => i.id === id);
   const qty = item?.quantity ?? 0;
 
@@ -37,7 +39,7 @@ export function MenuCard({
         }}
       >
         <Pressable
-          onPress={() => removeItem(id)}
+          onPress={() => dispatch(removeItem(id))}
           style={{
             padding: 8,
             borderRadius: 8,
@@ -59,7 +61,7 @@ export function MenuCard({
         </Text>
 
         <Pressable
-          onPress={() => addItem({ id, name, price })}
+          onPress={() => dispatch(addItem({ id, name, price }))}
           style={{
             padding: 8,
             borderRadius: 8,

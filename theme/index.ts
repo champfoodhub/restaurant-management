@@ -63,5 +63,7 @@ export function getTheme(
     },
   };
 
-  return themes[flavor.toLowerCase() as keyof typeof themes][mode];
+  const flavorKey = flavor.toLowerCase() as keyof typeof themes;
+  return themes[flavorKey][mode];
 }
+

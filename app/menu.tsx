@@ -1,19 +1,19 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
-    FlatList,
-    Image,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
-    useColorScheme,
+  FlatList,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useColorScheme,
 } from "react-native";
 
 import { useEffect } from "react";
 import { AppConfig } from "../config/config";
 import { loadUserFromStorage } from "../store/authSlice";
-import { addItem } from "../store/cartSlice";
+import { addItem, removeItem } from "../store/cartSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { getTheme } from "../theme";
 
@@ -96,6 +96,7 @@ const menuItems: MenuItem[] = [
 export default function MenuPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const items = useAppSelector((state) => state.cart.items);
   const mode = useAppSelector((state) => state.theme.mode);
   const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
   const system = useColorScheme() ?? "light";
@@ -103,33 +104,62 @@ export default function MenuPage() {
 
   const theme = getTheme(AppConfig.flavor, resolvedMode);
 
+  // Calculate total items in cart for badge
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+
   // Ensure user is loaded
   useEffect(() => {
     dispatch(loadUserFromStorage() as any);
   }, [dispatch]);
 
-  const renderMenuItem = ({ item }: { item: MenuItem }) => (
-    <LinearGradient colors={theme.card} style={styles.card}>
-      <Image source={{ uri: item.image }} style={styles.itemImage} />
-      <View style={styles.itemContent}>
-        <Text style={[styles.itemName, { color: theme.text }]}>{item.name}</Text>
-        <Text style={[styles.itemDesc, { color: theme.text + "80" }]}>
-          {item.description}
-        </Text>
-        <View style={styles.row}>
-          <Text style={[styles.itemPrice, { color: theme.accent }]}>
-            ₹{item.price}
+  const renderMenuItem = ({ item }: { item: MenuItem }) => {
+    const cartItem = items.find((i) => i.id === item.id);
+    const qty = cartItem?.quantity ?? 0;
+
+    return (
+      <LinearGradient colors={theme.card} style={styles.card}>
+        <Image source={{ uri: item.image }} style={styles.itemImage} />
+        <View style={styles.itemContent}>
+          <Text style={[styles.itemName, { color: theme.text }]}>{item.name}</Text>
+          <Text style={[styles.itemDesc, { color: theme.text + "80" }]}>
+            {item.description}
           </Text>
-          <Pressable
-            onPress={() => dispatch(addItem(item))}
-            style={[styles.addButton, { backgroundColor: theme.primary }]}
-          >
-            <Text style={styles.addText}>+ Add</Text>
-          </Pressable>
+          <View style={styles.row}>
+            <Text style={[styles.itemPrice, { color: theme.accent }]}>
+              ₹{item.price}
+            </Text>
+
+            {qty === 0 ? (
+              <Pressable
+                onPress={() => dispatch(addItem(item))}
+                style={[styles.addButton, { backgroundColor: theme.primary }]}
+              >
+                <Text style={styles.addText}>+ Add</Text>
+              </Pressable>
+            ) : (
+              <View style={styles.controls}>
+                <Pressable
+                  onPress={() => dispatch(removeItem(item.id))}
+                  style={[styles.circle, { backgroundColor: theme.primary }]}
+                >
+                  <Text style={styles.controlText}>−</Text>
+                </Pressable>
+                <Text style={[styles.qty, { color: theme.text }]}>
+                  {qty}
+                </Text>
+                <Pressable
+                  onPress={() => dispatch(addItem(item))}
+                  style={[styles.circle, { backgroundColor: theme.primary }]}
+                >
+                  <Text style={styles.controlText}>+</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
         </View>
-      </View>
-    </LinearGradient>
-  );
+      </LinearGradient>
+    );
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
@@ -155,6 +185,11 @@ export default function MenuPage() {
         onPress={() => router.push("/cart")}
         style={[styles.cartButton, { backgroundColor: theme.primary }]}
       >
+        {totalItems > 0 && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{totalItems}</Text>
+          </View>
+        )}
         <Text style={styles.cartText}>View Cart →</Text>
       </Pressable>
     </View>
@@ -219,6 +254,29 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 14,
   },
+  controls: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  circle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  controlText: {
+    color: "#FFF",
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  qty: {
+    fontSize: 16,
+    fontWeight: "600",
+    minWidth: 20,
+    textAlign: "center",
+  },
   cartButton: {
     position: "absolute",
     bottom: 24,
@@ -232,6 +290,22 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontWeight: "700",
     fontSize: 16,
+  },
+  badge: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    backgroundColor: "#FF3B30",
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeText: {
+    color: "#FFF",
+    fontSize: 12,
+    fontWeight: "700",
   },
 });
 

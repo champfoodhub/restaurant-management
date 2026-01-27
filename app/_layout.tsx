@@ -1,53 +1,94 @@
 import { Ionicons } from "@expo/vector-icons";
-import { DarkTheme, DefaultTheme, ThemeProvider, useNavigation } from "@react-navigation/native";
+import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { Pressable, StyleSheet, Text, useColorScheme, View } from "react-native";
+import { Pressable, StyleSheet, useColorScheme, View } from "react-native";
 import { Provider as ReduxProvider } from "react-redux";
 
-import { useEffect } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
+import ProfileModal from "../components/ProfileModal";
 import { AppConfig } from "../config/config";
 import { store } from "../store";
 import { clearUserFromStorage, loadUserFromStorage, logout } from "../store/authSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { getTheme } from "../theme";
 
+// Memoized ProfileIcon to prevent re-creation on every render
+// This fixes the "specified child already has a parent" Android crash
+const ProfileIcon = memo(function ProfileIcon({ 
+  isLoggedIn, 
+  onPress, 
+  theme 
+}: { 
+  isLoggedIn: boolean; 
+  onPress: () => void; 
+  theme: any;
+}) {
+  return (
+    <Pressable 
+      onPress={onPress} 
+      style={({ pressed }) => [
+        styles.profileIconContainer,
+        pressed && { opacity: 0.7 }
+      ]}
+    >
+      <View style={[styles.profileIcon, { backgroundColor: theme.primary }]}>
+        <Ionicons name="person" size={20} color="#FFF" />
+      </View>
+    </Pressable>
+  );
+});
+
+// Stable header right component - prevents ScreenStackHeaderConfig crash
+const HeaderRight = memo(function HeaderRight({ 
+  isLoggedIn, 
+  onPress, 
+  theme 
+}: { 
+  isLoggedIn: boolean; 
+  onPress: () => void; 
+  theme: any;
+}) {
+  return <ProfileIcon isLoggedIn={isLoggedIn} onPress={onPress} theme={theme} />;
+});
+
 function NavigationWrapper() {
   const dispatch = useAppDispatch();
-  const navigation = useNavigation();
   const router = useRouter();
   const mode = useAppSelector((state) => state.theme.mode);
   const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
+  const user = useAppSelector((state) => state.auth.user);
   const system = useColorScheme() ?? "light";
   const resolvedMode = mode === "light" || mode === "dark" ? mode : system;
 
-  const theme = getTheme(AppConfig.flavor, resolvedMode);
+  const theme = useMemo(() => getTheme(AppConfig.flavor, resolvedMode), [AppConfig.flavor, resolvedMode]);
+  const [profileModalVisible, setProfileModalVisible] = useState(false);
 
   // Load user from storage on app start
   useEffect(() => {
     dispatch(loadUserFromStorage());
   }, [dispatch]);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     await dispatch(clearUserFromStorage());
     dispatch(logout());
     router.replace("/");
-  };
+  }, [dispatch, router]);
 
-  const ProfileIcon = () => (
-    <View style={styles.profileIconContainer}>
-      <View style={[styles.profileIcon, { backgroundColor: theme.primary }]}>
-        <Ionicons name="person" size={20} color="#FFF" />
-      </View>
-      {isLoggedIn && (
-        <Pressable onPress={handleLogout} style={styles.logoutButton}>
-          <Text style={[styles.logoutText, { color: theme.text + "80" }]}>
-            Logout
-          </Text>
-        </Pressable>
-      )}
-    </View>
-  );
+  const openProfileModal = useCallback(() => {
+    if (isLoggedIn) {
+      setProfileModalVisible(true);
+    }
+  }, [isLoggedIn]);
+
+  // Memoize header right to prevent ScreenStackHeaderConfig crash
+  const headerRight = useCallback(() => (
+    <HeaderRight 
+      isLoggedIn={isLoggedIn} 
+      onPress={openProfileModal} 
+      theme={theme} 
+    />
+  ), [isLoggedIn, openProfileModal, theme]);
 
   return (
     <ThemeProvider
@@ -59,7 +100,7 @@ function NavigationWrapper() {
             backgroundColor: theme.background,
           },
           headerTintColor: theme.text,
-          headerRight: () => <ProfileIcon />,
+          headerRight: headerRight,
           headerTitleStyle: {
             color: theme.text,
             fontWeight: "700",
@@ -75,15 +116,21 @@ function NavigationWrapper() {
       <StatusBar
         style={resolvedMode === "dark" ? "light" : "dark"}
       />
+
+      <ProfileModal
+        visible={profileModalVisible}
+        onClose={() => setProfileModalVisible(false)}
+        user={user}
+        onLogout={handleLogout}
+        theme={theme}
+      />
     </ThemeProvider>
   );
 }
 
 const styles = StyleSheet.create({
   profileIconContainer: {
-    flexDirection: "column",
-    alignItems: "center",
-    marginRight: 12,
+    padding: 4,
   },
   profileIcon: {
     width: 36,
@@ -91,13 +138,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
-  },
-  logoutButton: {
-    marginTop: 6,
-  },
-  logoutText: {
-    fontSize: 12,
-    fontWeight: "500",
   },
 });
 
@@ -108,4 +148,6 @@ export default function RootLayout() {
     </ReduxProvider>
   );
 }
+
+
 
