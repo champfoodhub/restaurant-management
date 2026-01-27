@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -13,6 +13,16 @@ import {
 } from "react-native";
 import { UserData, saveUserToStorage, updateUser } from "../store/authSlice";
 import { useAppDispatch } from "../store/hooks";
+import { showError } from "../utils/alertUtils";
+import { Loggers } from "../utils/logger";
+import {
+  sanitizeInput,
+  validateDOB,
+  validateEmail,
+  validateMinLength,
+  validatePhone,
+  validateRequired,
+} from "../utils/validation";
 
 interface ProfileModalProps {
   visible: boolean;
@@ -38,6 +48,9 @@ interface FieldProps {
   theme: any;
   keyboardType?: "default" | "email-address" | "phone-pad";
   placeholder?: string;
+  error?: string;
+  showError?: boolean;
+  onBlur?: () => void;
 }
 
 const ProfileField = ({
@@ -48,6 +61,9 @@ const ProfileField = ({
   theme,
   keyboardType = "default",
   placeholder,
+  error,
+  showError,
+  onBlur,
 }: FieldProps) => (
   <View style={styles.fieldContainer}>
     <Text style={[styles.fieldLabel, { color: theme.accent }]}>{label}</Text>
@@ -59,7 +75,7 @@ const ProfileField = ({
           backgroundColor: editable 
             ? (Array.isArray(theme.card) ? theme.card[0] : theme.card) 
             : theme.muted + "30",
-          borderColor: theme.border,
+          borderColor: showError && error ? theme.primary : theme.border,
         },
       ]}
       value={value}
@@ -68,9 +84,24 @@ const ProfileField = ({
       keyboardType={keyboardType}
       placeholder={placeholder}
       placeholderTextColor={theme.text + "60"}
+      onBlur={onBlur}
     />
+    {showError && error && (
+      <Text style={[styles.errorText, { color: theme.primary }]}>
+        {error}
+      </Text>
+    )}
   </View>
 );
+
+interface FormErrors {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  address?: string;
+  dob?: string;
+  email?: string;
+}
 
 export default function ProfileModal({
   visible,
@@ -81,26 +112,155 @@ export default function ProfileModal({
 }: ProfileModalProps) {
   const dispatch = useAppDispatch();
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<UserData | null>(user);
+  const [formData, setFormData] = useState<UserData | null>(null);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
 
   React.useEffect(() => {
-    if (user) {
+    // Reset form data when modal opens with user data
+    if (visible && user) {
       setFormData(user);
+      setFormErrors({});
+      setTouchedFields({});
+      setIsEditing(false);
+    } else if (visible && !user) {
+      // If modal is open but no user, initialize with empty data
+      setFormData({
+        firstName: "",
+        lastName: "",
+        phone: "",
+        address: "",
+        dob: "",
+        email: "",
+      });
+      setFormErrors({});
+      setTouchedFields({});
     }
-  }, [user]);
+  }, [visible, user]);
+
+  // Validate a single field and return error message if any
+  const validateSingleField = useCallback((field: keyof UserData, value: string): string | undefined => {
+    switch (field) {
+      case "firstName": {
+        const requiredResult = validateRequired(value.trim(), "First name");
+        if (!requiredResult.isValid) return requiredResult.error;
+        const minLengthResult = validateMinLength(value.trim(), "First name", 2);
+        if (!minLengthResult.isValid) return minLengthResult.error;
+        return undefined;
+      }
+      case "lastName": {
+        const requiredResult = validateRequired(value.trim(), "Last name");
+        if (!requiredResult.isValid) return requiredResult.error;
+        const minLengthResult = validateMinLength(value.trim(), "Last name", 2);
+        if (!minLengthResult.isValid) return minLengthResult.error;
+        return undefined;
+      }
+      case "phone": {
+        const phoneResult = validatePhone(value.trim(), "Phone number", 10);
+        return phoneResult.isValid ? undefined : phoneResult.error;
+      }
+      case "address": {
+        // Address is NOT trimmed to allow spaces after words
+        const requiredResult = validateRequired(value, "Address");
+        if (!requiredResult.isValid) return requiredResult.error;
+        return undefined;
+      }
+      case "dob": {
+        const dobResult = validateDOB(value.trim());
+        return dobResult.isValid ? undefined : dobResult.error;
+      }
+      case "email": {
+        const emailResult = validateEmail(value.trim(), "Email");
+        return emailResult.isValid ? undefined : emailResult.error;
+      }
+      default:
+        return undefined;
+    }
+  }, []);
+
+  // Handle input change with validation
+  const handleInputChange = useCallback((field: keyof UserData, value: string) => {
+    // Sanitize input to prevent XSS
+    const sanitizedValue = sanitizeInput(value);
+    setFormData((prev) => prev ? { ...prev, [field]: sanitizedValue } : null);
+    
+    // If field was touched, validate it
+    if (touchedFields[field] && formData) {
+      const error = validateSingleField(field, sanitizedValue);
+      setFormErrors((prev) => ({ ...prev, [field]: error }));
+    }
+  }, [touchedFields, validateSingleField, formData]);
+
+  // Mark field as touched when user leaves it
+  const handleBlur = useCallback((field: keyof UserData) => {
+    setTouchedFields((prev) => ({ ...prev, [field]: true }));
+    if (formData) {
+      const error = validateSingleField(field, formData[field]);
+      setFormErrors((prev) => ({ ...prev, [field]: error }));
+    }
+  }, [formData, validateSingleField]);
+
+  // Validate entire form
+  const validateForm = useCallback((): boolean => {
+    if (!formData) return false;
+    
+    const errors: FormErrors = {};
+    let hasErrors = false;
+
+    (Object.keys(formData) as Array<keyof UserData>).forEach((field) => {
+      const error = validateSingleField(field, formData[field]);
+      if (error) {
+        errors[field] = error;
+        hasErrors = true;
+      }
+    });
+
+    setFormErrors(errors);
+    setTouchedFields((prev) => {
+      const updated = { ...prev };
+      (Object.keys(formData) as Array<keyof UserData>).forEach((field) => {
+        updated[field] = true;
+      });
+      return updated;
+    });
+
+    return !hasErrors;
+  }, [formData, validateSingleField]);
 
   const handleSave = async () => {
-    if (formData) {
+    if (!formData) return;
+
+    if (!validateForm()) {
+      showError("Validation Error", "Please fix the errors before saving.");
+      return;
+    }
+
+    try {
       dispatch(updateUser(formData));
       await dispatch(saveUserToStorage(formData));
       setIsEditing(false);
+      Loggers.auth.info("Profile updated successfully");
+    } catch (error) {
+      Loggers.auth.error("Failed to update profile", error);
+      showError("Error", "Failed to save profile changes. Please try again.");
     }
   };
 
   const handleCancel = () => {
     if (user) {
       setFormData(user);
+    } else {
+      setFormData({
+        firstName: "",
+        lastName: "",
+        phone: "",
+        address: "",
+        dob: "",
+        email: "",
+      });
     }
+    setFormErrors({});
+    setTouchedFields({});
     setIsEditing(false);
   };
 
@@ -109,7 +269,50 @@ export default function ProfileModal({
     onLogout();
   };
 
-  if (!formData) return null;
+  // Show loading or placeholder when no form data
+  if (!formData) {
+    return (
+      <Modal
+        visible={visible}
+        transparent
+        animationType="slide"
+        onRequestClose={onClose}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.modalOverlay}
+        >
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={(event) => {
+              event.stopPropagation();
+              onClose();
+            }}
+          />
+          <View
+            style={[
+              styles.modalContainer,
+              { backgroundColor: theme.background },
+            ]}
+            onStartShouldSetResponder={() => true}
+            onResponderReject={(e) => e.stopPropagation()}
+          >
+            <View style={styles.loadingContainer}>
+              <Text style={[styles.loadingText, { color: theme.text }]}>
+                Loading profile...
+              </Text>
+              <Pressable
+                onPress={onClose}
+                style={[styles.closeButton, { marginTop: 16 }]}
+              >
+                <Text style={{ color: theme.primary }}>Close</Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    );
+  }
 
   return (
     <Modal
@@ -161,7 +364,7 @@ export default function ProfileModal({
               {formData.firstName} {formData.lastName}
             </Text>
 
-            {/* Profile Info Summary - All 6 fields */}
+            {/* Profile Info Summary */}
             <View style={styles.profileInfoContainer}>
               <View style={styles.infoRow}>
                 <View style={styles.infoItem}>
@@ -228,24 +431,26 @@ export default function ProfileModal({
                   <ProfileField
                     label="First Name"
                     value={formData.firstName}
-                    onChangeText={(text) =>
-                      setFormData({ ...formData, firstName: text })
-                    }
+                    onChangeText={(text) => handleInputChange("firstName", text)}
                     editable={isEditing}
                     theme={theme}
                     placeholder="Enter first name"
+                    error={formErrors.firstName}
+                    showError={touchedFields.firstName && isEditing}
+                    onBlur={() => handleBlur("firstName")}
                   />
                 </View>
                 <View style={[styles.fieldWrapper, { marginLeft: 8 }]}>
                   <ProfileField
                     label="Last Name"
                     value={formData.lastName}
-                    onChangeText={(text) =>
-                      setFormData({ ...formData, lastName: text })
-                    }
+                    onChangeText={(text) => handleInputChange("lastName", text)}
                     editable={isEditing}
                     theme={theme}
                     placeholder="Enter last name"
+                    error={formErrors.lastName}
+                    showError={touchedFields.lastName && isEditing}
+                    onBlur={() => handleBlur("lastName")}
                   />
                 </View>
               </View>
@@ -253,36 +458,39 @@ export default function ProfileModal({
               <ProfileField
                 label="Email"
                 value={formData.email}
-                onChangeText={(text) =>
-                  setFormData({ ...formData, email: text })
-                }
+                onChangeText={(text) => handleInputChange("email", text)}
                 editable={isEditing}
                 theme={theme}
                 keyboardType="email-address"
                 placeholder="Enter email"
+                error={formErrors.email}
+                showError={touchedFields.email && isEditing}
+                onBlur={() => handleBlur("email")}
               />
 
               <ProfileField
                 label="Phone"
                 value={formData.phone}
-                onChangeText={(text) =>
-                  setFormData({ ...formData, phone: text })
-                }
+                onChangeText={(text) => handleInputChange("phone", text)}
                 editable={isEditing}
                 theme={theme}
                 keyboardType="phone-pad"
                 placeholder="Enter phone number"
+                error={formErrors.phone}
+                showError={touchedFields.phone && isEditing}
+                onBlur={() => handleBlur("phone")}
               />
 
               <ProfileField
                 label="Date of Birth"
                 value={formData.dob}
-                onChangeText={(text) =>
-                  setFormData({ ...formData, dob: text })
-                }
+                onChangeText={(text) => handleInputChange("dob", text)}
                 editable={isEditing}
                 theme={theme}
                 placeholder="DD/MM/YYYY"
+                error={formErrors.dob}
+                showError={touchedFields.dob && isEditing}
+                onBlur={() => handleBlur("dob")}
               />
 
               <View style={styles.fieldContainer}>
@@ -298,24 +506,30 @@ export default function ProfileModal({
                       backgroundColor: isEditing
                         ? (Array.isArray(theme.card) ? theme.card[0] : theme.card)
                         : theme.muted + "30",
-                      borderColor: theme.border,
+                      borderColor: touchedFields.address && isEditing && formErrors.address 
+                        ? theme.primary 
+                        : theme.border,
                     },
                   ]}
                   value={formData.address}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, address: text })
-                  }
+                  onChangeText={(text) => handleInputChange("address", text)}
                   editable={isEditing}
                   multiline
                   textAlignVertical="top"
                   placeholder="Enter address"
                   placeholderTextColor={theme.text + "60"}
+                  onBlur={() => handleBlur("address")}
                 />
+                {touchedFields.address && isEditing && formErrors.address && (
+                  <Text style={[styles.errorText, { color: theme.primary }]}>
+                    {formErrors.address}
+                  </Text>
+                )}
               </View>
-            </View>
 
-            {/* Spacing for logout button */}
-            <View style={{ height: 100 }} />
+              {/* Spacing for logout button */}
+              <View style={{ height: 100 }} />
+            </View>
           </ScrollView>
 
           {/* Action Buttons */}
@@ -389,6 +603,16 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingBottom: 34,
     maxHeight: "85%",
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 200,
+  },
+  loadingText: {
+    fontSize: 16,
+    opacity: 0.7,
   },
   modalHeader: {
     flexDirection: "row",
@@ -489,6 +713,11 @@ const styles = StyleSheet.create({
   addressInput: {
     minHeight: 80,
     paddingTop: 12,
+  },
+  errorText: {
+    fontSize: 11,
+    marginTop: 4,
+    marginLeft: 4,
   },
   actionButtons: {
     flexDirection: "row",

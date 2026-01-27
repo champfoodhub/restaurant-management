@@ -19,18 +19,25 @@ import { Loggers } from "../utils/logger";
 
 // Memoized ProfileIcon to prevent re-creation on every render
 // This fixes the "specified child already has a parent" Android crash
-const ProfileIcon = memo(function ProfileIcon({ 
-  isLoggedIn, 
-  onPress, 
-  theme 
-}: { 
-  isLoggedIn: boolean; 
-  onPress: () => void; 
+const ProfileIcon = memo(function ProfileIcon({
+  isLoggedIn,
+  onPress,
+  theme,
+  loading
+}: {
+  isLoggedIn: boolean;
+  onPress: () => void;
   theme: any;
+  loading: boolean;
 }) {
+  // When loading or not logged in, show a disabled/hidden state
+  if (loading || !isLoggedIn) {
+    return null;
+  }
+
   return (
-    <Pressable 
-      onPress={onPress} 
+    <Pressable
+      onPress={onPress}
       style={({ pressed }) => [
         styles.profileIconContainer,
         pressed && { opacity: 0.7 }
@@ -44,16 +51,18 @@ const ProfileIcon = memo(function ProfileIcon({
 });
 
 // Stable header right component - prevents ScreenStackHeaderConfig crash
-const HeaderRight = memo(function HeaderRight({ 
-  isLoggedIn, 
-  onPress, 
-  theme 
-}: { 
-  isLoggedIn: boolean; 
-  onPress: () => void; 
+const HeaderRight = memo(function HeaderRight({
+  isLoggedIn,
+  onPress,
+  theme,
+  loading
+}: {
+  isLoggedIn: boolean;
+  onPress: () => void;
   theme: any;
+  loading: boolean;
 }) {
-  return <ProfileIcon isLoggedIn={isLoggedIn} onPress={onPress} theme={theme} />;
+  return <ProfileIcon isLoggedIn={isLoggedIn} onPress={onPress} theme={theme} loading={loading} />;
 });
 
 function NavigationWrapper() {
@@ -61,6 +70,7 @@ function NavigationWrapper() {
   const dispatch = useAppDispatch();
   const mode = useAppSelector((state) => state.theme.mode);
   const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
+  const loading = useAppSelector((state) => state.auth.loading);
   const user = useAppSelector((state) => state.auth.user);
   const system = useColorScheme() ?? "light";
   const resolvedMode = mode === "light" || mode === "dark" ? mode : system;
@@ -86,19 +96,24 @@ function NavigationWrapper() {
   }, [dispatch]);
 
   const openProfileModal = useCallback(() => {
-    if (isLoggedIn) {
-      setProfileModalVisible(true);
+    // Only open profile modal if user data is loaded
+    // If still loading, we'll wait and show modal once loaded
+    if (loading) {
+      Loggers.auth.info("User data still loading, please wait...");
+      return;
     }
-  }, [isLoggedIn]);
+    setProfileModalVisible(true);
+  }, [loading]);
 
   // Memoize header right to prevent ScreenStackHeaderConfig crash
   const headerRight = useCallback(() => (
-    <HeaderRight 
-      isLoggedIn={isLoggedIn} 
-      onPress={openProfileModal} 
-      theme={theme} 
+    <HeaderRight
+      isLoggedIn={isLoggedIn}
+      onPress={openProfileModal}
+      theme={theme}
+      loading={loading}
     />
-  ), [isLoggedIn, openProfileModal, theme]);
+  ), [isLoggedIn, openProfileModal, theme, loading]);
 
   return (
     <ThemeProvider

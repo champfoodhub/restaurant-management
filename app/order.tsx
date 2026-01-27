@@ -23,6 +23,14 @@ import { getTheme } from "../theme";
 import { showError } from "../utils/alertUtils";
 import { AuthMessages } from "../utils/errorMessages";
 import { Loggers } from "../utils/logger";
+import {
+  sanitizeInput,
+  validateDOB,
+  validateEmail,
+  validateMinLength,
+  validatePhone,
+  validateRequired,
+} from "../utils/validation";
 
 interface FormData {
   firstName: string;
@@ -33,7 +41,16 @@ interface FormData {
   email: string;
 }
 
-// Memoized form input component to reduce re-renders
+interface FormErrors {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  address?: string;
+  dob?: string;
+  email?: string;
+}
+
+// Memoized form input component with validation state
 const FormInput = memo(({ 
   label, 
   value, 
@@ -44,14 +61,21 @@ const FormInput = memo(({
   maxLength, 
   multiline, 
   style, 
-  theme 
+  theme,
+  error,
+  showError: showErr
 }: any) => (
   <View style={styles.inputGroup}>
     <Text style={[styles.label, { color: theme.text }]}>
       {label}
     </Text>
     <TextInput
-      style={[styles.input, { backgroundColor: theme.muted, color: theme.text }, style]}
+      style={[
+        styles.input, 
+        { backgroundColor: theme.muted, color: theme.text }, 
+        style,
+        showErr && error ? { borderWidth: 1, borderColor: theme.primary } : {}
+      ]}
       placeholder={placeholder}
       placeholderTextColor={placeholderTextColor}
       value={value}
@@ -60,8 +84,14 @@ const FormInput = memo(({
       maxLength={maxLength}
       multiline={multiline}
     />
+    {showErr && error && (
+      <Text style={[styles.errorText, { color: theme.primary }]}>
+        {error}
+      </Text>
+    )}
   </View>
 ));
+FormInput.displayName = "FormInput";
 
 // Memoized initial view component
 const OrderInitialView = memo(({ theme, onOrderPress }: { theme: any; onOrderPress: () => void }) => (
@@ -99,6 +129,7 @@ const OrderInitialView = memo(({ theme, onOrderPress }: { theme: any; onOrderPre
     </View>
   </View>
 ));
+OrderInitialView.displayName = "OrderInitialView";
 
 // Main component
 function OrderPage() {
@@ -123,6 +154,8 @@ function OrderPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
 
   // Load user from storage on mount
   useEffect(() => {
@@ -150,37 +183,91 @@ function OrderPage() {
     }
   }, [loading, isLoggedIn]);
 
-  const handleInputChange = useCallback((field: keyof FormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  // Validate a single field and return error message if any
+  const validateSingleField = useCallback((field: keyof FormData, value: string): string | undefined => {
+    switch (field) {
+      case "firstName": {
+        const requiredResult = validateRequired(value.trim(), "First name");
+        if (!requiredResult.isValid) return requiredResult.error;
+        const minLengthResult = validateMinLength(value.trim(), "First name", 2);
+        if (!minLengthResult.isValid) return minLengthResult.error;
+        return undefined;
+      }
+      case "lastName": {
+        const requiredResult = validateRequired(value.trim(), "Last name");
+        if (!requiredResult.isValid) return requiredResult.error;
+        const minLengthResult = validateMinLength(value.trim(), "Last name", 2);
+        if (!minLengthResult.isValid) return minLengthResult.error;
+        return undefined;
+      }
+      case "phone": {
+        const phoneResult = validatePhone(value.trim(), "Phone number", 10);
+        return phoneResult.isValid ? undefined : phoneResult.error;
+      }
+      case "address": {
+        // Address is NOT trimmed to allow spaces after words
+        const requiredResult = validateRequired(value, "Address");
+        if (!requiredResult.isValid) return requiredResult.error;
+        const minLengthResult = validateMinLength(value, "Address", 10);
+        return minLengthResult.isValid ? undefined : minLengthResult.error;
+      }
+      case "dob": {
+        const dobResult = validateDOB(value.trim());
+        return dobResult.isValid ? undefined : dobResult.error;
+      }
+      case "email": {
+        const emailResult = validateEmail(value.trim(), "Email");
+        return emailResult.isValid ? undefined : emailResult.error;
+      }
+      default:
+        return undefined;
+    }
   }, []);
 
+  // Handle input change with validation
+  const handleInputChange = useCallback((field: keyof FormData, value: string) => {
+    // Sanitize input to prevent XSS
+    const sanitizedValue = sanitizeInput(value);
+    setFormData((prev) => ({ ...prev, [field]: sanitizedValue }));
+    
+    // If field was touched, validate it
+    if (touchedFields[field]) {
+      const error = validateSingleField(field, sanitizedValue);
+      setFormErrors((prev) => ({ ...prev, [field]: error }));
+    }
+  }, [touchedFields, validateSingleField]);
+
+  // Mark field as touched when user leaves it
+  const handleBlur = useCallback((field: keyof FormData) => {
+    setTouchedFields((prev) => ({ ...prev, [field]: true }));
+    const error = validateSingleField(field, formData[field]);
+    setFormErrors((prev) => ({ ...prev, [field]: error }));
+  }, [formData, validateSingleField]);
+
+  // Validate entire form
   const validateForm = useCallback((): boolean => {
-    if (!formData.firstName.trim()) {
-      showError("Validation Error", AuthMessages.validation.firstNameRequired);
-      return false;
-    }
-    if (!formData.lastName.trim()) {
-      showError("Validation Error", AuthMessages.validation.lastNameRequired);
-      return false;
-    }
-    if (!formData.phone.trim() || formData.phone.length < 10) {
-      showError("Validation Error", AuthMessages.validation.phoneInvalid);
-      return false;
-    }
-    if (!formData.address.trim()) {
-      showError("Validation Error", AuthMessages.validation.addressRequired);
-      return false;
-    }
-    if (!formData.dob.trim()) {
-      showError("Validation Error", AuthMessages.validation.dobRequired);
-      return false;
-    }
-    if (!formData.email.trim() || !formData.email.includes("@")) {
-      showError("Validation Error", AuthMessages.validation.emailInvalid);
-      return false;
-    }
-    return true;
-  }, [formData]);
+    const errors: FormErrors = {};
+    let hasErrors = false;
+
+    (Object.keys(formData) as Array<keyof FormData>).forEach((field) => {
+      const error = validateSingleField(field, formData[field]);
+      if (error) {
+        errors[field] = error;
+        hasErrors = true;
+      }
+    });
+
+    setFormErrors(errors);
+    setTouchedFields((prev) => {
+      const updated = { ...prev };
+      (Object.keys(formData) as Array<keyof FormData>).forEach((field) => {
+        updated[field] = true;
+      });
+      return updated;
+    });
+
+    return !hasErrors;
+  }, [formData, validateSingleField]);
 
   const handleSubmit = useCallback(async () => {
     if (!validateForm()) return;
@@ -233,100 +320,95 @@ function OrderPage() {
 
         <View style={styles.formContainer}>
           {/* First Name */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: theme.text }]}>
-              First Name
-            </Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.muted, color: theme.text }]}
-              placeholder="Enter first name"
-              placeholderTextColor={theme.text + "80"}
-              value={formData.firstName}
-              onChangeText={(value) => handleInputChange("firstName", value)}
-              returnKeyType="next"
-            />
-          </View>
+          <FormInput
+            label="First Name"
+            value={formData.firstName}
+            onChangeText={(value: string) => handleInputChange("firstName", value)}
+            placeholder="Enter first name"
+            placeholderTextColor={theme.text + "80"}
+            theme={theme}
+            returnKeyType="next"
+            error={formErrors.firstName}
+            showError={touchedFields.firstName}
+            onBlur={() => handleBlur("firstName")}
+          />
 
           {/* Last Name */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: theme.text }]}>
-              Last Name
-            </Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.muted, color: theme.text }]}
-              placeholder="Enter last name"
-              placeholderTextColor={theme.text + "80"}
-              value={formData.lastName}
-              onChangeText={(value) => handleInputChange("lastName", value)}
-              returnKeyType="next"
-            />
-          </View>
+          <FormInput
+            label="Last Name"
+            value={formData.lastName}
+            onChangeText={(value: string) => handleInputChange("lastName", value)}
+            placeholder="Enter last name"
+            placeholderTextColor={theme.text + "80"}
+            theme={theme}
+            returnKeyType="next"
+            error={formErrors.lastName}
+            showError={touchedFields.lastName}
+            onBlur={() => handleBlur("lastName")}
+          />
 
           {/* Phone */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: theme.text }]}>
-              Phone Number
-            </Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.muted, color: theme.text }]}
-              placeholder="Enter phone number"
-              placeholderTextColor={theme.text + "80"}
-              value={formData.phone}
-              onChangeText={(value) => handleInputChange("phone", value)}
-              keyboardType="phone-pad"
-              maxLength={10}
-              returnKeyType="next"
-            />
-          </View>
+          <FormInput
+            label="Phone Number"
+            value={formData.phone}
+            onChangeText={(value: string) => handleInputChange("phone", value)}
+            placeholder="Enter phone number"
+            placeholderTextColor={theme.text + "80"}
+            theme={theme}
+            keyboardType="phone-pad"
+            maxLength={10}
+            returnKeyType="next"
+            error={formErrors.phone}
+            showError={touchedFields.phone}
+            onBlur={() => handleBlur("phone")}
+          />
 
           {/* Address */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: theme.text }]}>
-              Address
-            </Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.muted, color: theme.text, height: 80, textAlignVertical: "top" }]}
-              placeholder="Enter address"
-              placeholderTextColor={theme.text + "80"}
-              value={formData.address}
-              onChangeText={(value) => handleInputChange("address", value)}
-              multiline
-              numberOfLines={3}
-              returnKeyType="next"
-            />
-          </View>
+          <FormInput
+            label="Address"
+            value={formData.address}
+            onChangeText={(value: string) => handleInputChange("address", value)}
+            placeholder="Enter address"
+            placeholderTextColor={theme.text + "80"}
+            theme={theme}
+            multiline
+            numberOfLines={3}
+            returnKeyType="next"
+            style={{ height: 80, textAlignVertical: "top" }}
+            error={formErrors.address}
+            showError={touchedFields.address}
+            onBlur={() => handleBlur("address")}
+          />
 
           {/* DOB */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: theme.text }]}>
-              Date of Birth
-            </Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.muted, color: theme.text }]}
-              placeholder="DD/MM/YYYY"
-              placeholderTextColor={theme.text + "80"}
-              value={formData.dob}
-              onChangeText={(value) => handleInputChange("dob", value)}
-              returnKeyType="next"
-            />
-          </View>
+          <FormInput
+            label="Date of Birth"
+            value={formData.dob}
+            onChangeText={(value: string) => handleInputChange("dob", value)}
+            placeholder="DD/MM/YYYY"
+            placeholderTextColor={theme.text + "80"}
+            theme={theme}
+            returnKeyType="next"
+            error={formErrors.dob}
+            showError={touchedFields.dob}
+            onBlur={() => handleBlur("dob")}
+          />
 
           {/* Email */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: theme.text }]}>
-              Email ID
-            </Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.muted, color: theme.text }]}
-              placeholder="Enter email"
-              placeholderTextColor={theme.text + "80"}
-              value={formData.email}
-              onChangeText={(value) => handleInputChange("email", value)}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              returnKeyType="done"
-            />
-          </View>
+          <FormInput
+            label="Email ID"
+            value={formData.email}
+            onChangeText={(value: string) => handleInputChange("email", value)}
+            placeholder="Enter email"
+            placeholderTextColor={theme.text + "80"}
+            theme={theme}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            returnKeyType="done"
+            error={formErrors.email}
+            showError={touchedFields.email}
+            onBlur={() => handleBlur("email")}
+          />
 
           {/* Sign Up Button */}
           <Pressable
@@ -426,6 +508,11 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 12,
     fontSize: 16,
+  },
+  errorText: {
+    fontSize: 12,
+    marginLeft: 4,
+    marginTop: 2,
   },
 });
 

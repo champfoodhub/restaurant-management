@@ -93,5 +93,49 @@ export const ThemeMessages = {
   warnings: {
     themeNotSupported: "This theme mode is not supported.",
   },
-}
+};
+
+// Validation-related messages
+export const ValidationMessages = {
+  general: {
+    fieldRequired: "This field is required",
+    invalidFormat: "Invalid format",
+    valueTooShort: "Value is too short",
+    valueTooLong: "Value is too long",
+  },
+  fields: {
+    firstName: {
+      required: "First name is required",
+      minLength: "First name must be at least 2 characters",
+      maxLength: "First name must be less than 50 characters",
+    },
+    lastName: {
+      required: "Last name is required",
+      minLength: "Last name must be at least 2 characters",
+      maxLength: "Last name must be less than 50 characters",
+    },
+    email: {
+      required: "Email is required",
+      invalid: "Please enter a valid email address",
+    },
+    phone: {
+      required: "Phone number is required",
+      invalid: "Please enter a valid phone number (at least 10 digits)",
+    },
+    address: {
+      required: "Address is required",
+      minLength: "Address must be at least 10 characters",
+      maxLength: "Address must be less than 200 characters",
+    },
+    dob: {
+      required: "Date of birth is required",
+      invalid: "Please enter a valid date in DD/MM/YYYY format",
+    },
+  },
+  cart: {
+    empty: "Your cart is empty. Add some items to continue.",
+    invalidItem: "Some items have invalid quantities",
+    invalidTotal: "Invalid cart total",
+  },
+};
 
