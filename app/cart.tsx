@@ -130,7 +130,7 @@ export default function CartPage() {
           <Pressable
             onPress={() => {
               dispatch(clearCart());
-              router.replace('/');
+              router.replace('/order-success');
             }}
           >
             <Text style={styles.checkoutText}>Checkout →</Text>

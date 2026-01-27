@@ -1,7 +1,7 @@
 export type Flavor = "HQ" | "USER" | "BRANCH";
 
 export const AppConfig = {
-  flavor: "USER" as Flavor,
+  flavor: "HQ" as Flavor,
 
   appName: "Restaurant Management",
 
