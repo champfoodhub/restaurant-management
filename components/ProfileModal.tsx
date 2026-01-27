@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useState } from "react";
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -103,6 +104,287 @@ interface FormErrors {
   email?: string;
 }
 
+// Loading placeholder component
+const LoadingPlaceholder = ({ theme }: { theme: any }) => (
+  <View style={styles.loadingContainer}>
+    <ActivityIndicator size="large" color={theme.primary} />
+    <Text style={[styles.loadingText, { color: theme.text, marginTop: 16 }]}>
+      Loading profile...
+    </Text>
+  </View>
+);
+
+// Main form content component
+const ProfileFormContent = ({
+  formData,
+  formErrors,
+  touchedFields,
+  isEditing,
+  theme,
+  onInputChange,
+  onBlur,
+  onEditPress,
+  onCancel,
+  onSave,
+  onLogout,
+  user,
+}: {
+  formData: UserData;
+  formErrors: FormErrors;
+  touchedFields: Record<string, boolean>;
+  isEditing: boolean;
+  theme: any;
+  onInputChange: (field: keyof UserData, value: string) => void;
+  onBlur: (field: keyof UserData) => void;
+  onEditPress: () => void;
+  onCancel: () => void;
+  onSave: () => void;
+  onLogout: () => void;
+  user: UserData | null;
+}) => (
+  <>
+    {/* Header */}
+    <View style={styles.modalHeader}>
+      <Text style={[styles.modalTitle, { color: theme.text }]}>
+        Profile
+      </Text>
+      <Pressable onPress={() => {}} style={styles.closeButton}>
+        <Ionicons name="close" size={24} color={theme.text} />
+      </Pressable>
+    </View>
+
+    {/* Profile Header */}
+    <View style={styles.profileHeader}>
+      <View
+        style={[
+          styles.avatar,
+          { backgroundColor: theme.primary },
+        ]}
+      >
+        <Ionicons name="person" size={40} color="#FFF" />
+      </View>
+      <Text style={[styles.userName, { color: theme.text }]}>
+        {formData.firstName} {formData.lastName}
+      </Text>
+
+      {/* Profile Info Summary */}
+      <View style={styles.profileInfoContainer}>
+        <View style={styles.infoRow}>
+          <View style={styles.infoItem}>
+            <Ionicons name="mail-outline" size={14} color={theme.accent} />
+            <Text style={[styles.infoText, { color: theme.text }]} numberOfLines={1}>
+              {formData.email}
+            </Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Ionicons name="call-outline" size={14} color={theme.accent} />
+            <Text style={[styles.infoText, { color: theme.text }]}>
+              {formData.phone}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.infoRow}>
+          <View style={[styles.infoItem, { flex: 1 }]}>
+            <Ionicons name="calendar-outline" size={14} color={theme.accent} />
+            <Text style={[styles.infoText, { color: theme.text }]}>
+              DOB: {formData.dob}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.infoRow}>
+          <View style={styles.infoItem}>
+            <Ionicons name="location-outline" size={14} color={theme.accent} />
+            <Text style={[styles.infoText, { color: theme.text }]} numberOfLines={2}>
+              {formData.address}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      <Pressable
+        onPress={() =>
+          isEditing ? onCancel() : onEditPress()
+        }
+        style={[
+          styles.editButton,
+          { backgroundColor: theme.primary },
+        ]}
+      >
+        <Ionicons
+          name={isEditing ? "close-outline" : "create-outline"}
+          size={16}
+          color="#FFF"
+          style={{ marginRight: 6 }}
+        />
+        <Text style={styles.editButtonText}>
+          {isEditing ? "Cancel" : "Edit"}
+        </Text>
+      </Pressable>
+    </View>
+
+    {/* Form Fields */}
+    <ScrollView
+      style={styles.scrollView}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View style={styles.fieldsContainer}>
+        <View style={styles.row}>
+          <View style={[styles.fieldWrapper, { marginRight: 8 }]}>
+            <ProfileField
+              label="First Name"
+              value={formData.firstName}
+              onChangeText={(text) => onInputChange("firstName", text)}
+              editable={isEditing}
+              theme={theme}
+              placeholder="Enter first name"
+              error={formErrors.firstName}
+              showError={touchedFields.firstName && isEditing}
+              onBlur={() => onBlur("firstName")}
+            />
+          </View>
+          <View style={[styles.fieldWrapper, { marginLeft: 8 }]}>
+            <ProfileField
+              label="Last Name"
+              value={formData.lastName}
+              onChangeText={(text) => onInputChange("lastName", text)}
+              editable={isEditing}
+              theme={theme}
+              placeholder="Enter last name"
+              error={formErrors.lastName}
+              showError={touchedFields.lastName && isEditing}
+              onBlur={() => onBlur("lastName")}
+            />
+          </View>
+        </View>
+
+        <ProfileField
+          label="Email"
+          value={formData.email}
+          onChangeText={(text) => onInputChange("email", text)}
+          editable={isEditing}
+          theme={theme}
+          keyboardType="email-address"
+          placeholder="Enter email"
+          error={formErrors.email}
+          showError={touchedFields.email && isEditing}
+          onBlur={() => onBlur("email")}
+        />
+
+        <ProfileField
+          label="Phone"
+          value={formData.phone}
+          onChangeText={(text) => onInputChange("phone", text)}
+          editable={isEditing}
+          theme={theme}
+          keyboardType="phone-pad"
+          placeholder="Enter phone number"
+          error={formErrors.phone}
+          showError={touchedFields.phone && isEditing}
+          onBlur={() => onBlur("phone")}
+        />
+
+        <ProfileField
+          label="Date of Birth"
+          value={formData.dob}
+          onChangeText={(text) => onInputChange("dob", text)}
+          editable={isEditing}
+          theme={theme}
+          placeholder="DD/MM/YYYY"
+          error={formErrors.dob}
+          showError={touchedFields.dob && isEditing}
+          onBlur={() => onBlur("dob")}
+        />
+
+        <View style={styles.fieldContainer}>
+          <Text style={[styles.fieldLabel, { color: theme.accent }]}>
+            Address
+          </Text>
+          <TextInput
+            style={[
+              styles.fieldInput,
+              styles.addressInput,
+              {
+                color: theme.text,
+                backgroundColor: isEditing
+                  ? (Array.isArray(theme.card) ? theme.card[0] : theme.card)
+                  : theme.muted + "30",
+                borderColor: touchedFields.address && isEditing && formErrors.address 
+                  ? theme.primary 
+                  : theme.border,
+              },
+            ]}
+            value={formData.address}
+            onChangeText={(text) => onInputChange("address", text)}
+            editable={isEditing}
+            multiline
+            textAlignVertical="top"
+            placeholder="Enter address"
+            placeholderTextColor={theme.text + "60"}
+            onBlur={() => onBlur("address")}
+          />
+          {touchedFields.address && isEditing && formErrors.address && (
+            <Text style={[styles.errorText, { color: theme.primary }]}>
+              {formErrors.address}
+            </Text>
+          )}
+        </View>
+
+        {/* Spacing for logout button */}
+        <View style={{ height: 100 }} />
+      </View>
+    </ScrollView>
+
+    {/* Action Buttons */}
+    {isEditing && (
+      <View style={styles.actionButtons}>
+        <Pressable
+          onPress={onCancel}
+          style={[
+            styles.cancelButton,
+            { borderColor: theme.border },
+          ]}
+        >
+          <Text style={[styles.cancelButtonText, { color: theme.text }]}>
+            Cancel
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={onSave}
+          style={[
+            styles.saveButton,
+            { backgroundColor: theme.primary },
+          ]}
+        >
+          <Text style={styles.saveButtonText}>Save Changes</Text>
+        </Pressable>
+      </View>
+    )}
+
+    {/* Logout Button */}
+    {!isEditing && (
+      <View style={styles.logoutContainer}>
+        <Pressable
+          onPress={onLogout}
+          style={[
+            styles.logoutButton,
+            { backgroundColor: theme.primary + "15" },
+          ]}
+        >
+          <Ionicons
+            name="log-out-outline"
+            size={20}
+            color={theme.primary}
+          />
+          <Text style={[styles.logoutText, { color: theme.primary }]}>
+            Sign Out
+          </Text>
+        </Pressable>
+      </View>
+    )}
+  </>
+);
+
 export default function ProfileModal({
   visible,
   onClose,
@@ -118,23 +400,23 @@ export default function ProfileModal({
 
   React.useEffect(() => {
     // Reset form data when modal opens with user data
-    if (visible && user) {
-      setFormData(user);
+    if (visible) {
+      if (user) {
+        setFormData(user);
+      } else {
+        // If modal is open but no user, initialize with empty data
+        setFormData({
+          firstName: "",
+          lastName: "",
+          phone: "",
+          address: "",
+          dob: "",
+          email: "",
+        });
+      }
       setFormErrors({});
       setTouchedFields({});
       setIsEditing(false);
-    } else if (visible && !user) {
-      // If modal is open but no user, initialize with empty data
-      setFormData({
-        firstName: "",
-        lastName: "",
-        phone: "",
-        address: "",
-        dob: "",
-        email: "",
-      });
-      setFormErrors({});
-      setTouchedFields({});
     }
   }, [visible, user]);
 
@@ -264,55 +546,19 @@ export default function ProfileModal({
     setIsEditing(false);
   };
 
+  const handleEditPress = () => {
+    setIsEditing(true);
+  };
+
   const handleLogoutPress = () => {
     setIsEditing(false);
     onLogout();
   };
 
-  // Show loading or placeholder when no form data
-  if (!formData) {
-    return (
-      <Modal
-        visible={visible}
-        transparent
-        animationType="slide"
-        onRequestClose={onClose}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.modalOverlay}
-        >
-          <Pressable
-            style={styles.modalBackdrop}
-            onPress={(event) => {
-              event.stopPropagation();
-              onClose();
-            }}
-          />
-          <View
-            style={[
-              styles.modalContainer,
-              { backgroundColor: theme.background },
-            ]}
-            onStartShouldSetResponder={() => true}
-            onResponderReject={(e) => e.stopPropagation()}
-          >
-            <View style={styles.loadingContainer}>
-              <Text style={[styles.loadingText, { color: theme.text }]}>
-                Loading profile...
-              </Text>
-              <Pressable
-                onPress={onClose}
-                style={[styles.closeButton, { marginTop: 16 }]}
-              >
-                <Text style={{ color: theme.primary }}>Close</Text>
-              </Pressable>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-    );
-  }
+  const handleBackdropPress = (event: any) => {
+    event.stopPropagation();
+    onClose();
+  };
 
   return (
     <Modal
@@ -320,6 +566,7 @@ export default function ProfileModal({
       transparent
       animationType="slide"
       onRequestClose={onClose}
+      statusBarTranslucent
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -327,10 +574,7 @@ export default function ProfileModal({
       >
         <Pressable
           style={styles.modalBackdrop}
-          onPress={(event) => {
-            event.stopPropagation();
-            onClose();
-          }}
+          onPress={handleBackdropPress}
         />
         <View
           style={[
@@ -340,244 +584,24 @@ export default function ProfileModal({
           onStartShouldSetResponder={() => true}
           onResponderReject={(e) => e.stopPropagation()}
         >
-          {/* Header */}
-          <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: theme.text }]}>
-              Profile
-            </Text>
-            <Pressable onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color={theme.text} />
-            </Pressable>
-          </View>
-
-          {/* Profile Header */}
-          <View style={styles.profileHeader}>
-            <View
-              style={[
-                styles.avatar,
-                { backgroundColor: theme.primary },
-              ]}
-            >
-              <Ionicons name="person" size={40} color="#FFF" />
-            </View>
-            <Text style={[styles.userName, { color: theme.text }]}>
-              {formData.firstName} {formData.lastName}
-            </Text>
-
-            {/* Profile Info Summary */}
-            <View style={styles.profileInfoContainer}>
-              <View style={styles.infoRow}>
-                <View style={styles.infoItem}>
-                  <Ionicons name="mail-outline" size={14} color={theme.accent} />
-                  <Text style={[styles.infoText, { color: theme.text }]} numberOfLines={1}>
-                    {formData.email}
-                  </Text>
-                </View>
-                <View style={styles.infoItem}>
-                  <Ionicons name="call-outline" size={14} color={theme.accent} />
-                  <Text style={[styles.infoText, { color: theme.text }]}>
-                    {formData.phone}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.infoRow}>
-                <View style={[styles.infoItem, { flex: 1 }]}>
-                  <Ionicons name="calendar-outline" size={14} color={theme.accent} />
-                  <Text style={[styles.infoText, { color: theme.text }]}>
-                    DOB: {formData.dob}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.infoRow}>
-                <View style={styles.infoItem}>
-                  <Ionicons name="location-outline" size={14} color={theme.accent} />
-                  <Text style={[styles.infoText, { color: theme.text }]} numberOfLines={2}>
-                    {formData.address}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            <Pressable
-              onPress={() =>
-                isEditing ? handleCancel() : setIsEditing(true)
-              }
-              style={[
-                styles.editButton,
-                { backgroundColor: theme.primary },
-              ]}
-            >
-              <Ionicons
-                name={isEditing ? "close-outline" : "create-outline"}
-                size={16}
-                color="#FFF"
-                style={{ marginRight: 6 }}
-              />
-              <Text style={styles.editButtonText}>
-                {isEditing ? "Cancel" : "Edit"}
-              </Text>
-            </Pressable>
-          </View>
-
-          {/* Form Fields */}
-          <ScrollView
-            style={styles.scrollView}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View style={styles.fieldsContainer}>
-              <View style={styles.row}>
-                <View style={[styles.fieldWrapper, { marginRight: 8 }]}>
-                  <ProfileField
-                    label="First Name"
-                    value={formData.firstName}
-                    onChangeText={(text) => handleInputChange("firstName", text)}
-                    editable={isEditing}
-                    theme={theme}
-                    placeholder="Enter first name"
-                    error={formErrors.firstName}
-                    showError={touchedFields.firstName && isEditing}
-                    onBlur={() => handleBlur("firstName")}
-                  />
-                </View>
-                <View style={[styles.fieldWrapper, { marginLeft: 8 }]}>
-                  <ProfileField
-                    label="Last Name"
-                    value={formData.lastName}
-                    onChangeText={(text) => handleInputChange("lastName", text)}
-                    editable={isEditing}
-                    theme={theme}
-                    placeholder="Enter last name"
-                    error={formErrors.lastName}
-                    showError={touchedFields.lastName && isEditing}
-                    onBlur={() => handleBlur("lastName")}
-                  />
-                </View>
-              </View>
-
-              <ProfileField
-                label="Email"
-                value={formData.email}
-                onChangeText={(text) => handleInputChange("email", text)}
-                editable={isEditing}
-                theme={theme}
-                keyboardType="email-address"
-                placeholder="Enter email"
-                error={formErrors.email}
-                showError={touchedFields.email && isEditing}
-                onBlur={() => handleBlur("email")}
-              />
-
-              <ProfileField
-                label="Phone"
-                value={formData.phone}
-                onChangeText={(text) => handleInputChange("phone", text)}
-                editable={isEditing}
-                theme={theme}
-                keyboardType="phone-pad"
-                placeholder="Enter phone number"
-                error={formErrors.phone}
-                showError={touchedFields.phone && isEditing}
-                onBlur={() => handleBlur("phone")}
-              />
-
-              <ProfileField
-                label="Date of Birth"
-                value={formData.dob}
-                onChangeText={(text) => handleInputChange("dob", text)}
-                editable={isEditing}
-                theme={theme}
-                placeholder="DD/MM/YYYY"
-                error={formErrors.dob}
-                showError={touchedFields.dob && isEditing}
-                onBlur={() => handleBlur("dob")}
-              />
-
-              <View style={styles.fieldContainer}>
-                <Text style={[styles.fieldLabel, { color: theme.accent }]}>
-                  Address
-                </Text>
-                <TextInput
-                  style={[
-                    styles.fieldInput,
-                    styles.addressInput,
-                    {
-                      color: theme.text,
-                      backgroundColor: isEditing
-                        ? (Array.isArray(theme.card) ? theme.card[0] : theme.card)
-                        : theme.muted + "30",
-                      borderColor: touchedFields.address && isEditing && formErrors.address 
-                        ? theme.primary 
-                        : theme.border,
-                    },
-                  ]}
-                  value={formData.address}
-                  onChangeText={(text) => handleInputChange("address", text)}
-                  editable={isEditing}
-                  multiline
-                  textAlignVertical="top"
-                  placeholder="Enter address"
-                  placeholderTextColor={theme.text + "60"}
-                  onBlur={() => handleBlur("address")}
-                />
-                {touchedFields.address && isEditing && formErrors.address && (
-                  <Text style={[styles.errorText, { color: theme.primary }]}>
-                    {formErrors.address}
-                  </Text>
-                )}
-              </View>
-
-              {/* Spacing for logout button */}
-              <View style={{ height: 100 }} />
-            </View>
-          </ScrollView>
-
-          {/* Action Buttons */}
-          {isEditing && (
-            <View style={styles.actionButtons}>
-              <Pressable
-                onPress={handleCancel}
-                style={[
-                  styles.cancelButton,
-                  { borderColor: theme.border },
-                ]}
-              >
-                <Text style={[styles.cancelButtonText, { color: theme.text }]}>
-                  Cancel
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={handleSave}
-                style={[
-                  styles.saveButton,
-                  { backgroundColor: theme.primary },
-                ]}
-              >
-                <Text style={styles.saveButtonText}>Save Changes</Text>
-              </Pressable>
-            </View>
-          )}
-
-          {/* Logout Button */}
-          {!isEditing && (
-            <View style={styles.logoutContainer}>
-              <Pressable
-                onPress={handleLogoutPress}
-                style={[
-                  styles.logoutButton,
-                  { backgroundColor: theme.primary + "15" },
-                ]}
-              >
-                <Ionicons
-                  name="log-out-outline"
-                  size={20}
-                  color={theme.primary}
-                />
-                <Text style={[styles.logoutText, { color: theme.primary }]}>
-                  Sign Out
-                </Text>
-              </Pressable>
-            </View>
+          {/* Single Modal with conditional content */}
+          {formData ? (
+            <ProfileFormContent
+              formData={formData}
+              formErrors={formErrors}
+              touchedFields={touchedFields}
+              isEditing={isEditing}
+              theme={theme}
+              onInputChange={handleInputChange}
+              onBlur={handleBlur}
+              onEditPress={handleEditPress}
+              onCancel={handleCancel}
+              onSave={handleSave}
+              onLogout={handleLogoutPress}
+              user={user}
+            />
+          ) : (
+            <LoadingPlaceholder theme={theme} />
           )}
         </View>
       </KeyboardAvoidingView>
@@ -605,10 +629,11 @@ const styles = StyleSheet.create({
     maxHeight: "85%",
   },
   loadingContainer: {
-    padding: 40,
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
     minHeight: 200,
+    paddingVertical: 40,
   },
   loadingText: {
     fontSize: 16,
