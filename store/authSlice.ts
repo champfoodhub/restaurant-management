@@ -1,6 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 
+import { Loggers } from "../utils/logger";
+
 export interface UserData {
   firstName: string;
   lastName: string;
@@ -14,12 +16,14 @@ export interface AuthState {
   isLoggedIn: boolean;
   user: UserData | null;
   loading: boolean;
+  error: string | null;
 }
 
 const initialState: AuthState = {
   isLoggedIn: false,
   user: null,
   loading: true,
+  error: null,
 };
 
 const AUTH_STORAGE_KEY = "@auth_user_data";
@@ -77,6 +81,7 @@ export const authSlice = createSlice({
     builder
       .addCase(loadUserFromStorage.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(loadUserFromStorage.fulfilled, (state, action) => {
         if (action.payload) {
@@ -84,17 +89,30 @@ export const authSlice = createSlice({
           state.isLoggedIn = true;
         }
         state.loading = false;
+        state.error = null;
       })
-      .addCase(loadUserFromStorage.rejected, (state) => {
+      .addCase(loadUserFromStorage.rejected, (state, action) => {
         state.loading = false;
+        state.error = action.error.message || "Failed to load user";
+        Loggers.auth.error("Failed to load user from storage", action.error);
       })
       .addCase(saveUserToStorage.fulfilled, (state, action) => {
         state.user = action.payload;
         state.isLoggedIn = true;
+        state.error = null;
+      })
+      .addCase(saveUserToStorage.rejected, (state, action) => {
+        state.error = action.error.message || "Failed to save user";
+        Loggers.auth.error("Failed to save user to storage", action.error);
       })
       .addCase(clearUserFromStorage.fulfilled, (state) => {
         state.user = null;
         state.isLoggedIn = false;
+        state.error = null;
+      })
+      .addCase(clearUserFromStorage.rejected, (state, action) => {
+        state.error = action.error.message || "Failed to clear user";
+        Loggers.auth.error("Failed to clear user from storage", action.error);
       });
   },
 });

@@ -16,6 +16,7 @@ import { loadUserFromStorage } from "../store/authSlice";
 import { addItem, removeItem } from "../store/cartSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { getTheme } from "../theme";
+import { Loggers } from "../utils/logger";
 
 interface MenuItem {
   id: string;
@@ -109,6 +110,7 @@ export default function MenuPage() {
 
   // Ensure user is loaded
   useEffect(() => {
+    Loggers.auth.info("Loading user from storage");
     dispatch(loadUserFromStorage() as any);
   }, [dispatch]);
 

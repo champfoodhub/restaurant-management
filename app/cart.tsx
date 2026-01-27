@@ -15,6 +15,7 @@ import { addItem, clearCart, removeItem } from "../store/cartSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { toggleTheme } from "../store/themeSlice";
 import { getTheme } from "../theme";
+import { Loggers } from "../utils/logger";
 
 export default function CartPage() {
   const { safeReplace, safePush } = useSafeNavigation(200);
@@ -129,8 +130,13 @@ export default function CartPage() {
           </Pressable>
           <Pressable
             onPress={() => {
-              dispatch(clearCart());
-              router.replace('/order-success');
+              try {
+                dispatch(clearCart());
+                Loggers.cart.info("Cart cleared, navigating to order success");
+                router.replace('/order-success');
+              } catch (error) {
+                Loggers.cart.error("Checkout failed", error);
+              }
             }}
           >
             <Text style={styles.checkoutText}>Checkout →</Text>

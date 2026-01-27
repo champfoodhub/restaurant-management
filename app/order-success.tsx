@@ -16,6 +16,7 @@ import { useSafeNavigation } from "../hooks/useSafeNavigation";
 import { clearCart } from "../store/cartSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { getTheme } from "../theme";
+import { Loggers } from "../utils/logger";
 
 const funnyMessages = [
   "🍕 Your pizza is feeling nervous... in a good way!",
@@ -155,8 +156,13 @@ function OrderSuccessPage() {
   const theme = getTheme(AppConfig.flavor, resolvedMode);
 
   const handleOrderAgain = () => {
-    dispatch(clearCart());
-    safePush("menu");
+    try {
+      dispatch(clearCart());
+      Loggers.cart.info("Cart cleared, navigating to menu");
+      safePush("menu");
+    } catch (error) {
+      Loggers.cart.error("Failed to order again", error);
+    }
   };
 
   return (

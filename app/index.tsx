@@ -16,6 +16,7 @@ import { loadUserFromStorage } from "../store/authSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { toggleTheme } from "../store/themeSlice";
 import { getTheme } from "../theme";
+import { Loggers } from "../utils/logger";
 
 export default function Home() {
   const { safeReplace, safePush } = useSafeNavigation(200);
@@ -30,6 +31,7 @@ export default function Home() {
 
   // Load user from storage and redirect if logged in
   useEffect(() => {
+    Loggers.auth.info("App started, loading user from storage");
     dispatch(loadUserFromStorage());
   }, [dispatch]);
 

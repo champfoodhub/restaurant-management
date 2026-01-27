@@ -13,6 +13,9 @@ import { store } from "../store";
 import { clearUserFromStorage, loadUserFromStorage, logout } from "../store/authSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { getTheme } from "../theme";
+import { showError } from "../utils/alertUtils";
+import { AuthMessages } from "../utils/errorMessages";
+import { Loggers } from "../utils/logger";
 
 // Memoized ProfileIcon to prevent re-creation on every render
 // This fixes the "specified child already has a parent" Android crash
@@ -71,9 +74,15 @@ function NavigationWrapper() {
   }, [dispatch]);
 
   const handleLogout = useCallback(async () => {
-    await dispatch(clearUserFromStorage());
-    dispatch(logout());
-    router.replace('/');
+    try {
+      await dispatch(clearUserFromStorage()).unwrap();
+      dispatch(logout());
+      router.replace('/');
+      Loggers.auth.info("User logged out successfully");
+    } catch (error) {
+      Loggers.auth.error("Logout failed", error);
+      showError("Logout Error", AuthMessages.errors.clearUserFailed);
+    }
   }, [dispatch]);
 
   const openProfileModal = useCallback(() => {

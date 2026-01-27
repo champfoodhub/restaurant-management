@@ -2,6 +2,8 @@ import type { NavigationProp } from "@react-navigation/native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useCallback, useRef } from "react";
 
+import { Loggers } from "../utils/logger";
+
 type RootStackParamList = {
   index: undefined;
   order: undefined;
@@ -33,10 +35,12 @@ export function useSafeNavigation(delay: number = 150) {
       const now = Date.now();
       if (now - lastNavTime.current < delay) {
         // Too soon after last navigation, skip
+        Loggers.navigation.warn(`Skipping navigation to ${screen} - too soon after last navigation`);
         return;
       }
 
       lastNavTime.current = now;
+      Loggers.navigation.info(`Navigating to ${screen}`);
       // Use type assertion to access the replace method
       (navigation as any).replace(screen as string);
     },
@@ -48,10 +52,12 @@ export function useSafeNavigation(delay: number = 150) {
     (screen: keyof RootStackParamList | string) => {
       const now = Date.now();
       if (now - lastNavTime.current < delay) {
+        Loggers.navigation.warn(`Skipping navigation to ${screen} - too soon after last navigation`);
         return;
       }
 
       lastNavTime.current = now;
+      Loggers.navigation.info(`Navigating to ${screen}`);
       // Use type assertion to access the push method
       (navigation as any).push(screen as string);
     },
@@ -62,6 +68,7 @@ export function useSafeNavigation(delay: number = 150) {
   const safeNavigate = useCallback(
     (screen: keyof RootStackParamList | string) => {
       lastNavTime.current = Date.now();
+      Loggers.navigation.info(`Navigating to ${screen}`);
       navigation.navigate(screen as never);
     },
     [navigation]
@@ -70,7 +77,10 @@ export function useSafeNavigation(delay: number = 150) {
   // Safe go back - only if can go back
   const safeGoBack = useCallback(() => {
     if (navigation.canGoBack()) {
+      Loggers.navigation.info("Going back");
       navigation.goBack();
+    } else {
+      Loggers.navigation.warn("Cannot go back - no previous screen");
     }
   }, [navigation]);
 

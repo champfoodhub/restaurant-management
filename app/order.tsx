@@ -4,7 +4,6 @@ import { router } from "expo-router";
 import React, { memo, useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -21,6 +20,9 @@ import useSafeNavigation from "../hooks/useSafeNavigation";
 import { loadUserFromStorage, saveUserToStorage } from "../store/authSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { getTheme } from "../theme";
+import { showError } from "../utils/alertUtils";
+import { AuthMessages } from "../utils/errorMessages";
+import { Loggers } from "../utils/logger";
 
 interface FormData {
   firstName: string;
@@ -154,27 +156,27 @@ function OrderPage() {
 
   const validateForm = useCallback((): boolean => {
     if (!formData.firstName.trim()) {
-      Alert.alert("Error", "First name is required");
+      showError("Validation Error", AuthMessages.validation.firstNameRequired);
       return false;
     }
     if (!formData.lastName.trim()) {
-      Alert.alert("Error", "Last name is required");
+      showError("Validation Error", AuthMessages.validation.lastNameRequired);
       return false;
     }
     if (!formData.phone.trim() || formData.phone.length < 10) {
-      Alert.alert("Error", "Valid phone number is required");
+      showError("Validation Error", AuthMessages.validation.phoneInvalid);
       return false;
     }
     if (!formData.address.trim()) {
-      Alert.alert("Error", "Address is required");
+      showError("Validation Error", AuthMessages.validation.addressRequired);
       return false;
     }
     if (!formData.dob.trim()) {
-      Alert.alert("Error", "Date of birth is required");
+      showError("Validation Error", AuthMessages.validation.dobRequired);
       return false;
     }
     if (!formData.email.trim() || !formData.email.includes("@")) {
-      Alert.alert("Error", "Valid email is required");
+      showError("Validation Error", AuthMessages.validation.emailInvalid);
       return false;
     }
     return true;
@@ -189,7 +191,8 @@ function OrderPage() {
       // Use router to navigate to menu page
       router.replace('/menu');
     } catch (error) {
-      Alert.alert("Error", "Failed to signup");
+      Loggers.auth.error("Signup failed", error);
+      showError("Error", AuthMessages.errors.saveUserFailed);
     } finally {
       setIsSubmitting(false);
     }
