@@ -1,5 +1,5 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { router } from "expo-router";
 import {
   FlatList,
   Pressable,
@@ -10,13 +10,14 @@ import {
 } from "react-native";
 
 import { AppConfig } from "../config/config";
+import { useSafeNavigation } from "../hooks/useSafeNavigation";
 import { addItem, clearCart, removeItem } from "../store/cartSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { toggleTheme } from "../store/themeSlice";
 import { getTheme } from "../theme";
 
 export default function CartPage() {
-  const router = useRouter();
+  const { safeReplace, safePush } = useSafeNavigation(200);
   const dispatch = useAppDispatch();
   const items = useAppSelector((state) => state.cart.items);
   const mode = useAppSelector((state) => state.theme.mode);
@@ -43,7 +44,7 @@ export default function CartPage() {
         </Text>
 
         <Pressable
-          onPress={() => router.push("/menu")}
+          onPress={() => safePush("menu")}
           style={[
             styles.backBtn,
             { backgroundColor: theme.primary },
@@ -129,7 +130,7 @@ export default function CartPage() {
           <Pressable
             onPress={() => {
               dispatch(clearCart());
-              router.replace("/");
+              router.replace('/');
             }}
           >
             <Text style={styles.checkoutText}>Checkout →</Text>

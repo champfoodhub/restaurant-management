@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
-import { Stack, useRouter } from "expo-router";
+import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Pressable, StyleSheet, useColorScheme, View } from "react-native";
 import { Provider as ReduxProvider } from "react-redux";
@@ -8,6 +8,7 @@ import { Provider as ReduxProvider } from "react-redux";
 import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import ProfileModal from "../components/ProfileModal";
 import { AppConfig } from "../config/config";
+import useSafeNavigation from "../hooks/useSafeNavigation";
 import { store } from "../store";
 import { clearUserFromStorage, loadUserFromStorage, logout } from "../store/authSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -53,8 +54,8 @@ const HeaderRight = memo(function HeaderRight({
 });
 
 function NavigationWrapper() {
+  const { safeReplace } = useSafeNavigation(200);
   const dispatch = useAppDispatch();
-  const router = useRouter();
   const mode = useAppSelector((state) => state.theme.mode);
   const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
   const user = useAppSelector((state) => state.auth.user);
@@ -72,8 +73,8 @@ function NavigationWrapper() {
   const handleLogout = useCallback(async () => {
     await dispatch(clearUserFromStorage());
     dispatch(logout());
-    router.replace("/");
-  }, [dispatch, router]);
+    router.replace('/');
+  }, [dispatch]);
 
   const openProfileModal = useCallback(() => {
     if (isLoggedIn) {

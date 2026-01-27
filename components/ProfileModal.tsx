@@ -25,7 +25,7 @@ interface ProfileModalProps {
     accent: string;
     text: string;
     muted: string;
-    card: string;
+    card: string[] | [string, string, ...string[]];
     border: string;
   };
 }
@@ -56,7 +56,9 @@ const ProfileField = ({
         styles.fieldInput,
         {
           color: theme.text,
-          backgroundColor: editable ? theme.card : theme.muted + "30",
+          backgroundColor: editable 
+            ? (Array.isArray(theme.card) ? theme.card[0] : theme.card) 
+            : theme.muted + "30",
           borderColor: theme.border,
         },
       ]}
@@ -120,12 +122,20 @@ export default function ProfileModal({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.modalOverlay}
       >
-        <Pressable style={styles.modalBackdrop} onPress={onClose} />
+        <Pressable
+          style={styles.modalBackdrop}
+          onPress={(event) => {
+            event.stopPropagation();
+            onClose();
+          }}
+        />
         <View
           style={[
             styles.modalContainer,
             { backgroundColor: theme.background },
           ]}
+          onStartShouldSetResponder={() => true}
+          onResponderReject={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <View style={styles.modalHeader}>
@@ -210,6 +220,7 @@ export default function ProfileModal({
           <ScrollView
             style={styles.scrollView}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
             <View style={styles.fieldsContainer}>
               <View style={styles.row}>
@@ -285,7 +296,7 @@ export default function ProfileModal({
                     {
                       color: theme.text,
                       backgroundColor: isEditing
-                        ? theme.card
+                        ? (Array.isArray(theme.card) ? theme.card[0] : theme.card)
                         : theme.muted + "30",
                       borderColor: theme.border,
                     },

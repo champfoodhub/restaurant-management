@@ -1,5 +1,4 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
 import {
   ActivityIndicator,
   ImageBackground,
@@ -12,13 +11,14 @@ import {
 
 import { useEffect } from "react";
 import { AppConfig } from "../config/config";
+import useSafeNavigation from "../hooks/useSafeNavigation";
 import { loadUserFromStorage } from "../store/authSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { toggleTheme } from "../store/themeSlice";
 import { getTheme } from "../theme";
 
 export default function Home() {
-  const router = useRouter();
+  const { safeReplace, safePush } = useSafeNavigation(200);
   const dispatch = useAppDispatch();
   const mode = useAppSelector((state) => state.theme.mode);
   const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
@@ -33,20 +33,15 @@ export default function Home() {
     dispatch(loadUserFromStorage());
   }, [dispatch]);
 
-  // Redirect to menu if already logged in
-  // Using a timeout to ensure views are settled before navigation
-  // This prevents the Android "specified child already has a parent" crash
+  // Redirect to menu if already logged in using safe navigation
   useEffect(() => {
     if (!loading && isLoggedIn) {
-      const timer = setTimeout(() => {
-        router.replace("/menu");
-      }, 100);
-      return () => clearTimeout(timer);
+      safeReplace("menu");
     }
-  }, [loading, isLoggedIn, router]);
+  }, [loading, isLoggedIn, safeReplace]);
 
   const handleOrderNow = () => {
-    router.push("/order");
+    safePush("order");
   };
 
   if (loading) {

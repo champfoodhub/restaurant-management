@@ -28,42 +28,44 @@ export function useSafeNavigation(delay: number = 150) {
   }, [route.name]);
 
   // Safe replace - navigates only if enough time has passed
-  const safeReplace = useCallback(<K extends keyof RootStackParamList>(
-    screen: K,
-    params?: RootStackParamList[K]
-  ) => {
-    const now = Date.now();
-    if (now - lastNavTime.current < delay) {
-      // Too soon after last navigation, skip
-      return;
-    }
-    
-    lastNavTime.current = now;
-    navigation.replace(screen as string, params as never);
-  }, [navigation, delay]);
+  const safeReplace = useCallback(
+    (screen: keyof RootStackParamList | string) => {
+      const now = Date.now();
+      if (now - lastNavTime.current < delay) {
+        // Too soon after last navigation, skip
+        return;
+      }
+
+      lastNavTime.current = now;
+      // Use type assertion to access the replace method
+      (navigation as any).replace(screen as string);
+    },
+    [navigation, delay]
+  );
 
   // Safe push - navigates only if enough time has passed
-  const safePush = useCallback(<K extends keyof RootStackParamList>(
-    screen: K,
-    params?: RootStackParamList[K]
-  ) => {
-    const now = Date.now();
-    if (now - lastNavTime.current < delay) {
-      return;
-    }
-    
-    lastNavTime.current = now;
-    navigation.push(screen as string, params as never);
-  }, [navigation, delay]);
+  const safePush = useCallback(
+    (screen: keyof RootStackParamList | string) => {
+      const now = Date.now();
+      if (now - lastNavTime.current < delay) {
+        return;
+      }
+
+      lastNavTime.current = now;
+      // Use type assertion to access the push method
+      (navigation as any).push(screen as string);
+    },
+    [navigation, delay]
+  );
 
   // Safe navigate - navigates only if mounted
-  const safeNavigate = useCallback(<K extends keyof RootStackParamList>(
-    screen: K,
-    params?: RootStackParamList[K]
-  ) => {
-    lastNavTime.current = Date.now();
-    navigation.navigate(screen as string, params as never);
-  }, [navigation]);
+  const safeNavigate = useCallback(
+    (screen: keyof RootStackParamList | string) => {
+      lastNavTime.current = Date.now();
+      navigation.navigate(screen as never);
+    },
+    [navigation]
+  );
 
   // Safe go back - only if can go back
   const safeGoBack = useCallback(() => {

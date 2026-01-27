@@ -13,6 +13,7 @@ export function getTheme(
         accent: "#EF4444",
         muted: "#F5F5F5",
         card: ["#FFFFFF", "#F5F5F5"] as [string, string, ...string[]],
+        border: "#E5E5E5",
       },
       dark: {
         background: "#0B0B0B",
@@ -21,6 +22,7 @@ export function getTheme(
         accent: "#F87171",
         muted: "#1A1A1A",
         card: ["#1A1A1A", "#262626"] as [string, string, ...string[]],
+        border: "#404040",
       },
     },
 
@@ -32,6 +34,7 @@ export function getTheme(
         accent: "#A78BFA",
         muted: "#EEF2FF",
         card: ["#FFFFFF", "#EEF2FF"] as [string, string, ...string[]],
+        border: "#E2E8F0",
       },
       dark: {
         background: "#0A061A",
@@ -40,6 +43,7 @@ export function getTheme(
         accent: "#C4B5FD",
         muted: "#1E1B3A",
         card: ["#1E1B3A", "#2D2A5C"] as [string, string, ...string[]],
+        border: "#4C1D95",
       },
     },
 
@@ -51,6 +55,7 @@ export function getTheme(
         accent: "#60A5FA",
         muted: "#EFF6FF",
         card: ["#FFFFFF", "#EFF6FF"] as [string, string, ...string[]],
+        border: "#E2E8F0",
       },
       dark: {
         background: "#020617",
@@ -59,6 +64,7 @@ export function getTheme(
         accent: "#93C5FD",
         muted: "#0F172A",
         card: ["#0F172A", "#1E293B"] as [string, string, ...string[]],
+        border: "#1E3A8A",
       },
     },
   };

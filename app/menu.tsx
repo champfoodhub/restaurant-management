@@ -1,5 +1,4 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
 import {
   FlatList,
   Image,
@@ -12,6 +11,7 @@ import {
 
 import { useEffect } from "react";
 import { AppConfig } from "../config/config";
+import useSafeNavigation from "../hooks/useSafeNavigation";
 import { loadUserFromStorage } from "../store/authSlice";
 import { addItem, removeItem } from "../store/cartSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -94,7 +94,7 @@ const menuItems: MenuItem[] = [
 ];
 
 export default function MenuPage() {
-  const router = useRouter();
+  const { safePush } = useSafeNavigation(200);
   const dispatch = useAppDispatch();
   const items = useAppSelector((state) => state.cart.items);
   const mode = useAppSelector((state) => state.theme.mode);
@@ -182,7 +182,7 @@ export default function MenuPage() {
 
       {/* Cart Floating Button */}
       <Pressable
-        onPress={() => router.push("/cart")}
+        onPress={() => safePush("cart")}
         style={[styles.cartButton, { backgroundColor: theme.primary }]}
       >
         {totalItems > 0 && (

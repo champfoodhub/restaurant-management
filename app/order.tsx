@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { router } from "expo-router";
 import React, { memo, useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -17,6 +17,7 @@ import {
 } from "react-native";
 
 import { AppConfig } from "../config/config";
+import useSafeNavigation from "../hooks/useSafeNavigation";
 import { loadUserFromStorage, saveUserToStorage } from "../store/authSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { getTheme } from "../theme";
@@ -99,7 +100,7 @@ const OrderInitialView = memo(({ theme, onOrderPress }: { theme: any; onOrderPre
 
 // Main component
 function OrderPage() {
-  const router = useRouter();
+  const { safeReplace } = useSafeNavigation(200);
   const dispatch = useAppDispatch();
   const mode = useAppSelector((state) => state.theme.mode);
   const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
@@ -140,16 +141,12 @@ function OrderPage() {
     }
   }, [user]);
 
-  // If logged in, redirect to menu
-  // Using timeout to prevent Android navigation crash
+  // If logged in, redirect to menu using safe navigation
   useEffect(() => {
     if (!loading && isLoggedIn) {
-      const timer = setTimeout(() => {
-        router.replace("/menu");
-      }, 100);
-      return () => clearTimeout(timer);
+      router.replace('/menu');
     }
-  }, [loading, isLoggedIn, router]);
+  }, [loading, isLoggedIn]);
 
   const handleInputChange = useCallback((field: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -189,16 +186,14 @@ function OrderPage() {
     setIsSubmitting(true);
     try {
       await dispatch(saveUserToStorage(formData) as any);
-      // Use timeout to prevent Android navigation crash
-      setTimeout(() => {
-        router.replace("/menu");
-      }, 100);
+      // Use router to navigate to menu page
+      router.replace('/menu');
     } catch (error) {
       Alert.alert("Error", "Failed to signup");
     } finally {
       setIsSubmitting(false);
     }
-  }, [dispatch, formData, router, validateForm]);
+  }, [dispatch, formData, validateForm]);
 
   if (loading) {
     return (
@@ -217,8 +212,13 @@ function OrderPage() {
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: theme.background }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.header}>
           <Pressable onPress={() => setShowForm(false)}>
             <Ionicons name="arrow-back" size={24} color={theme.text} />
@@ -240,6 +240,7 @@ function OrderPage() {
               placeholderTextColor={theme.text + "80"}
               value={formData.firstName}
               onChangeText={(value) => handleInputChange("firstName", value)}
+              returnKeyType="next"
             />
           </View>
 
@@ -254,6 +255,7 @@ function OrderPage() {
               placeholderTextColor={theme.text + "80"}
               value={formData.lastName}
               onChangeText={(value) => handleInputChange("lastName", value)}
+              returnKeyType="next"
             />
           </View>
 
@@ -270,6 +272,7 @@ function OrderPage() {
               onChangeText={(value) => handleInputChange("phone", value)}
               keyboardType="phone-pad"
               maxLength={10}
+              returnKeyType="next"
             />
           </View>
 
@@ -286,6 +289,7 @@ function OrderPage() {
               onChangeText={(value) => handleInputChange("address", value)}
               multiline
               numberOfLines={3}
+              returnKeyType="next"
             />
           </View>
 
@@ -300,6 +304,7 @@ function OrderPage() {
               placeholderTextColor={theme.text + "80"}
               value={formData.dob}
               onChangeText={(value) => handleInputChange("dob", value)}
+              returnKeyType="next"
             />
           </View>
 
@@ -316,6 +321,7 @@ function OrderPage() {
               onChangeText={(value) => handleInputChange("email", value)}
               keyboardType="email-address"
               autoCapitalize="none"
+              returnKeyType="done"
             />
           </View>
 
@@ -394,6 +400,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
     paddingTop: 40,
+    minHeight: "100%",
+    flexGrow: 1,
   },
   title: {
     fontSize: 24,
