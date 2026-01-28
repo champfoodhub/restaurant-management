@@ -27,12 +27,37 @@ const initialState: AuthState = {
 };
 
 const AUTH_STORAGE_KEY = "@auth_user_data";
+const ASYNC_STORAGE_TIMEOUT = 5000; // 5 second timeout
+
+// Helper function to wrap AsyncStorage operations with timeout
+const asyncStorageWithTimeout = <T>(
+  promise: Promise<T>,
+  timeoutMs: number = ASYNC_STORAGE_TIMEOUT
+): Promise<T> => {
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      reject(new Error(`AsyncStorage operation timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    promise
+      .then((result) => {
+        clearTimeout(timeoutId);
+        resolve(result);
+      })
+      .catch((error) => {
+        clearTimeout(timeoutId);
+        reject(error);
+      });
+  });
+};
 
 // Async thunks for storage operations
 export const loadUserFromStorage = createAsyncThunk(
   "auth/loadUserFromStorage",
   async () => {
-    const userData = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
+    const userData = await asyncStorageWithTimeout(
+      AsyncStorage.getItem(AUTH_STORAGE_KEY)
+    );
     if (userData) {
       return JSON.parse(userData) as UserData;
     }
@@ -43,7 +68,9 @@ export const loadUserFromStorage = createAsyncThunk(
 export const saveUserToStorage = createAsyncThunk(
   "auth/saveUserToStorage",
   async (user: UserData) => {
-    await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+    await asyncStorageWithTimeout(
+      AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user))
+    );
     return user;
   }
 );
@@ -51,7 +78,7 @@ export const saveUserToStorage = createAsyncThunk(
 export const clearUserFromStorage = createAsyncThunk(
   "auth/clearUserFromStorage",
   async () => {
-    await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
+    await asyncStorageWithTimeout(AsyncStorage.removeItem(AUTH_STORAGE_KEY));
     return null;
   }
 );

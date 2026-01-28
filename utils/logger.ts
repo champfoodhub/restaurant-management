@@ -175,5 +175,33 @@ export const Loggers = {
     error: (msg: string, errorObj?: unknown, data?: unknown) =>
       logError("Theme", msg, errorObj, data),
   },
+  menu: {
+    debug: (msg: string, data?: unknown) => debug("Menu", msg, data),
+    info: (msg: string, data?: unknown) => info("Menu", msg, data),
+    warn: (msg: string, data?: unknown) => warn("Menu", msg, data),
+    error: (msg: string, errorObj?: unknown, data?: unknown) =>
+      logError("Menu", msg, errorObj, data),
+  },
+  stock: {
+    debug: (msg: string, data?: unknown) => debug("Stock", msg, data),
+    info: (msg: string, data?: unknown) => info("Stock", msg, data),
+    warn: (msg: string, data?: unknown) => warn("Stock", msg, data),
+    error: (msg: string, errorObj?: unknown, data?: unknown) =>
+      logError("Stock", msg, errorObj, data),
+  },
+  database: {
+    debug: (msg: string, data?: unknown) => debug("Database", msg, data),
+    info: (msg: string, data?: unknown) => info("Database", msg, data),
+    warn: (msg: string, data?: unknown) => warn("Database", msg, data),
+    error: (msg: string, errorObj?: unknown, data?: unknown) =>
+      logError("Database", msg, errorObj, data),
+  },
+  flavor: {
+    debug: (msg: string, data?: unknown) => debug("Flavor", msg, data),
+    info: (msg: string, data?: unknown) => info("Flavor", msg, data),
+    warn: (msg: string, data?: unknown) => warn("Flavor", msg, data),
+    error: (msg: string, errorObj?: unknown, data?: unknown) =>
+      logError("Flavor", msg, errorObj, data),
+  },
 };
 

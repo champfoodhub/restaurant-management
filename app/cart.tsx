@@ -9,7 +9,6 @@ import {
   useColorScheme,
 } from "react-native";
 
-import { AppConfig } from "../config/config";
 import { useSafeNavigation } from "../hooks/useSafeNavigation";
 import { addItem, clearCart, removeItem } from "../store/cartSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -22,10 +21,11 @@ export default function CartPage() {
   const dispatch = useAppDispatch();
   const items = useAppSelector((state) => state.cart.items);
   const mode = useAppSelector((state) => state.theme.mode);
+  const flavor = useAppSelector((state) => state.flavor.currentFlavor);
   const system = useColorScheme() ?? "light";
   const resolvedMode = mode === "light" || mode === "dark" ? mode : system;
 
-  const theme = getTheme(AppConfig.flavor, resolvedMode);
+  const theme = getTheme(flavor, resolvedMode);
 
   const total = items.reduce(
     (sum, item) => sum + item.price * item.quantity,

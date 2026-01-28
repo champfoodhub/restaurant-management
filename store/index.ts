@@ -1,6 +1,9 @@
 import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "./authSlice";
 import cartReducer from "./cartSlice";
+import flavorReducer from "./flavorSlice";
+import menuReducer from "./menuSlice";
+import stockReducer from "./stockSlice";
 import themeReducer from "./themeSlice";
 
 export const store = configureStore({
@@ -8,6 +11,9 @@ export const store = configureStore({
     cart: cartReducer,
     theme: themeReducer,
     auth: authReducer,
+    menu: menuReducer,
+    stock: stockReducer,
+    flavor: flavorReducer,
   },
 });
 

@@ -15,7 +15,6 @@ import {
   View,
 } from "react-native";
 
-import { AppConfig } from "../config/config";
 import useSafeNavigation from "../hooks/useSafeNavigation";
 import { loadUserFromStorage, saveUserToStorage } from "../store/authSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -136,13 +135,14 @@ function OrderPage() {
   const { safeReplace } = useSafeNavigation(200);
   const dispatch = useAppDispatch();
   const mode = useAppSelector((state) => state.theme.mode);
+  const flavor = useAppSelector((state) => state.flavor.currentFlavor);
   const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
   const loading = useAppSelector((state) => state.auth.loading);
   const user = useAppSelector((state) => state.auth.user);
   const system = useColorScheme() ?? "light";
   const resolvedMode = mode === "light" || mode === "dark" ? mode : system;
 
-  const theme = getTheme(AppConfig.flavor, resolvedMode);
+  const theme = getTheme(flavor, resolvedMode);
 
   const [formData, setFormData] = useState<FormData>({
     firstName: "",

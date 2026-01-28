@@ -5,3 +5,7 @@ import type { AppDispatch, RootState } from "./index";
 export const useAppDispatch = () => useDispatch<AppDispatch>();
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 
+// Flavor-specific hooks
+export const useFlavor = () => useAppSelector((state) => state.flavor.currentFlavor);
+export const useFlavorLoading = () => useAppSelector((state) => state.flavor.loading);
+
