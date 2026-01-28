@@ -212,7 +212,7 @@ export const refreshCurrentSeasonalMenu = createAsyncThunk(
   'menu/refreshCurrentSeasonalMenu',
   async (_, { getState }) => {
     const state = getState() as { menu: MenuState };
-    const { seasonalMenus } = state.menu;
+    const seasonalMenus = state.menu.seasonalMenus;
     
     // Create manager locally for computation (not stored in Redux)
     const { createSeasonalMenuManager } = await import('../utils/seasonalMenu');
@@ -501,22 +501,26 @@ export const selectAllMenuItems = (state: { menu: MenuState }) => state.menu.ite
 
 /**
  * Get all categories (memoized with stable reference)
+ * Fix: Use JSON stringify comparison instead of reference since Redux creates new array references
  */
 let cachedCategories: string[] | null = null;
-let lastItemsReference: MenuItem[] | null = null;
+let lastItemsJson: string | null = null;
 
 export const selectCategories = (state: { menu: MenuState }) => {
   const items = state.menu.items;
   
-  // Return cached categories if items reference hasn't changed
-  if (cachedCategories !== null && lastItemsReference === items) {
+  // Create a stable representation for comparison
+  const currentItemsJson = JSON.stringify(items.map(i => i.category).sort());
+  
+  // Return cached categories if items haven't changed
+  if (cachedCategories !== null && lastItemsJson === currentItemsJson) {
     return cachedCategories;
   }
   
   // Compute and cache
   const categories = new Set(items.map(item => item.category));
-  cachedCategories = Array.from(categories);
-  lastItemsReference = items;
+  cachedCategories = Array.from(categories).sort();
+  lastItemsJson = currentItemsJson;
   
   return cachedCategories;
 };

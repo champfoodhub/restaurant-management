@@ -159,7 +159,7 @@ function OrderPage() {
 
   // Load user from storage on mount
   useEffect(() => {
-    dispatch(loadUserFromStorage() as any);
+    dispatch(loadUserFromStorage());
   }, [dispatch]);
 
   // Update form with loaded user data

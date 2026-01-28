@@ -17,7 +17,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import { hasPermission, isBranch, isHQ, isUser } from "../config/accessControl";
-import { MenuItem as ConfigMenuItem } from "../config/config";
+import { MenuItem as ConfigMenuItem, SeasonalMenu } from "../config/config";
 import useSafeNavigation from "../hooks/useSafeNavigation";
 import { loadUserFromStorage } from "../store/authSlice";
 import { addItem, removeItem } from "../store/cartSlice";
@@ -157,6 +157,18 @@ const sampleMenuItems: ConfigMenuItem[] = [
 // Timeout for database initialization (5 seconds)
 const DB_INIT_TIMEOUT = 5000;
 
+// Category to icon mapping for food type icons
+const CATEGORY_ICONS: Record<string, string> = {
+  "All": "apps",
+  "Main Course": "restaurant",
+  "Appetizer": "fast-food",
+  "Dessert": "ice-cream",
+  "Beverages": "wine",
+  "Drinks": "wine",
+  "Special": "star",
+  "Snacks": "restaurant",
+};
+
 // Helper function to handle stock toggle without Promise return type issues
 const handleStockToggle = (
   dispatch: ReturnType<typeof useAppDispatch>,
@@ -278,7 +290,7 @@ export default function MenuPage() {
   // Ensure user is loaded
   useEffect(() => {
     Loggers.auth.info("Loading user from storage");
-    dispatch(loadUserFromStorage() as any);
+    dispatch(loadUserFromStorage());
   }, [dispatch]);
 
   // Get displayed menu items based on current seasonal menu
@@ -610,6 +622,12 @@ export default function MenuPage() {
             onPress={() => setSelectedCategory(null)}
             style={[styles.categoryChip, { backgroundColor: selectedCategory === null ? theme.primary : theme.muted }]}
           >
+            <Ionicons 
+              name={CATEGORY_ICONS["All"] as any} 
+              size={16} 
+              color={selectedCategory === null ? "#FFF" : theme.text} 
+              style={styles.categoryIcon}
+            />
             <Text style={[styles.categoryText, { color: selectedCategory === null ? "#FFF" : theme.text }]}>All</Text>
           </Pressable>
           {categories.map((category) => (
@@ -618,6 +636,12 @@ export default function MenuPage() {
               onPress={() => setSelectedCategory(category)}
               style={[styles.categoryChip, { backgroundColor: selectedCategory === category ? theme.primary : theme.muted }]}
             >
+              <Ionicons 
+                name={CATEGORY_ICONS[category] as any || "restaurant"} 
+                size={16} 
+                color={selectedCategory === category ? "#FFF" : theme.text} 
+                style={styles.categoryIcon}
+              />
               <Text style={[styles.categoryText, { color: selectedCategory === category ? "#FFF" : theme.text }]}>{category}</Text>
             </Pressable>
           ))}
@@ -966,10 +990,20 @@ const styles = StyleSheet.create({
   locationText: { fontSize: 14, marginBottom: 4 },
   headerAction: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20 },
   headerActionText: { color: "#FFF", fontWeight: "600", fontSize: 14 },
-  categoryContainer: { maxHeight: 50, marginBottom: 8 },
+  categoryContainer: { maxHeight: 48, marginBottom: 8 },
   categoryContent: { paddingHorizontal: 16, gap: 8 },
-  categoryChip: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, marginRight: 8 },
-  categoryText: { fontWeight: "600", fontSize: 14 },
+  categoryChip: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "center",
+    paddingVertical: 6, 
+    paddingHorizontal: 12, 
+    borderRadius: 20, 
+    marginRight: 8,
+    gap: 4,
+  },
+  categoryIcon: { marginBottom: -1 },
+  categoryText: { fontWeight: "600", fontSize: 12 },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   loadingText: { marginTop: 16, fontSize: 16 },
   dbErrorBanner: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, gap: 8 },

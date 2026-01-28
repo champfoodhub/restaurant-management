@@ -127,6 +127,7 @@ const ProfileFormContent = ({
   onCancel,
   onSave,
   onLogout,
+  onClose,
   user,
 }: {
   formData: UserData;
@@ -140,6 +141,7 @@ const ProfileFormContent = ({
   onCancel: () => void;
   onSave: () => void;
   onLogout: () => void;
+  onClose: () => void;
   user: UserData | null;
 }) => (
   <>
@@ -148,7 +150,7 @@ const ProfileFormContent = ({
       <Text style={[styles.modalTitle, { color: theme.text }]}>
         Profile
       </Text>
-      <Pressable onPress={() => {}} style={styles.closeButton}>
+      <Pressable onPress={onClose} style={styles.closeButton}>
         <Ionicons name="close" size={24} color={theme.text} />
       </Pressable>
     </View>
@@ -598,6 +600,7 @@ export default function ProfileModal({
               onCancel={handleCancel}
               onSave={handleSave}
               onLogout={handleLogoutPress}
+              onClose={onClose}
               user={user}
             />
           ) : (
