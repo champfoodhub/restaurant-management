@@ -74,13 +74,22 @@ function SuccessView({ theme }: SuccessViewProps) {
     }).start();
 
     // Delayed message animation
-    setTimeout(() => {
+    const messageTimer = setTimeout(() => {
       Animated.timing(messageOpacity, {
         toValue: 1,
         duration: 600,
         useNativeDriver: true,
       }).start();
     }, 800);
+
+    // Cleanup timer on unmount
+    return () => {
+      clearTimeout(messageTimer);
+      // Stop any ongoing animations
+      scaleAnim.stopAnimation();
+      opacityAnim.stopAnimation();
+      messageOpacity.stopAnimation();
+    };
   }, []);
 
   return (

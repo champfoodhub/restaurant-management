@@ -1,5 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import React, { memo, useCallback, useMemo } from "react";
 import {
   FlatList,
   Pressable,
@@ -16,8 +17,51 @@ import { toggleTheme } from "../store/themeSlice";
 import { getTheme } from "../theme";
 import { Loggers } from "../utils/logger";
 
+// Memoized cart item component for better performance
+const CartItemComponent = memo(({ item, theme, onAdd, onRemove }: {
+  item: { id: string; name: string; price: number; quantity: number };
+  theme: any;
+  onAdd: () => void;
+  onRemove: () => void;
+}) => (
+  <LinearGradient
+    colors={theme.card}
+    style={styles.card}
+  >
+    <View>
+      <Text style={[styles.name, { color: theme.text }]}>
+        {item.name}
+      </Text>
+      <Text style={[styles.price, { color: theme.accent }]}>
+        ₹{item.price} × {item.quantity}
+      </Text>
+    </View>
+
+    <View style={styles.controls}>
+      <Pressable
+        onPress={onRemove}
+        style={[styles.circle, { backgroundColor: theme.primary }]}
+      >
+        <Text style={styles.controlText}>−</Text>
+      </Pressable>
+
+      <Text style={[styles.qty, { color: theme.text }]}>
+        {item.quantity}
+      </Text>
+
+      <Pressable
+        onPress={onAdd}
+        style={[styles.circle, { backgroundColor: theme.primary }]}
+      >
+        <Text style={styles.controlText}>+</Text>
+      </Pressable>
+    </View>
+  </LinearGradient>
+));
+CartItemComponent.displayName = "CartItemComponent";
+
 export default function CartPage() {
-  const { safeReplace, safePush } = useSafeNavigation(200);
+  const { safePush } = useSafeNavigation(300);
   const dispatch = useAppDispatch();
   const items = useAppSelector((state) => state.cart.items);
   const mode = useAppSelector((state) => state.theme.mode);
@@ -25,12 +69,41 @@ export default function CartPage() {
   const system = useColorScheme() ?? "light";
   const resolvedMode = mode === "light" || mode === "dark" ? mode : system;
 
-  const theme = getTheme(flavor, resolvedMode);
+  const theme = useMemo(() => getTheme(flavor, resolvedMode), [flavor, resolvedMode]);
 
-  const total = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
+  const total = useMemo(() =>
+    items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    [items]
   );
+
+  // Memoized handlers
+  const handleAddItem = useCallback((item: typeof items[0]) => {
+    dispatch(addItem(item));
+  }, [dispatch]);
+
+  const handleRemoveItem = useCallback((itemId: string) => {
+    dispatch(removeItem(itemId));
+  }, [dispatch]);
+
+  const handleClearCart = useCallback(() => {
+    dispatch(clearCart());
+    Loggers.cart.info("Cart cleared");
+    const timer = setTimeout(() => {
+      router.replace('/order-success');
+    }, 100);
+    // Cleanup timer if component unmounts
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [dispatch]);
+
+  const handleBrowseMenu = useCallback(() => {
+    safePush("menu");
+  }, [safePush]);
+
+  const handleToggleTheme = useCallback(() => {
+    dispatch(toggleTheme());
+  }, [dispatch]);
 
   if (items.length === 0) {
     return (
@@ -45,7 +118,7 @@ export default function CartPage() {
         </Text>
 
         <Pressable
-          onPress={() => safePush("menu")}
+          onPress={handleBrowseMenu}
           style={[
             styles.backBtn,
             { backgroundColor: theme.primary },
@@ -55,7 +128,7 @@ export default function CartPage() {
         </Pressable>
 
         <Pressable
-          onPress={() => dispatch(toggleTheme())}
+          onPress={handleToggleTheme}
           style={{ marginTop: 16 }}
         >
           <Text style={{ color: theme.text, opacity: 0.7 }}>
@@ -73,39 +146,12 @@ export default function CartPage() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: 16, paddingBottom: 200 }}
         renderItem={({ item }) => (
-          <LinearGradient
-            colors={theme.card}
-            style={styles.card}
-          >
-            <View>
-              <Text style={[styles.name, { color: theme.text }]}>
-                {item.name}
-              </Text>
-              <Text style={[styles.price, { color: theme.accent }]}>
-                ₹{item.price} × {item.quantity}
-              </Text>
-            </View>
-
-            <View style={styles.controls}>
-              <Pressable
-                onPress={() => dispatch(removeItem(item.id))}
-                style={[styles.circle, { backgroundColor: theme.primary }]}
-              >
-                <Text style={styles.controlText}>−</Text>
-              </Pressable>
-
-              <Text style={[styles.qty, { color: theme.text }]}>
-                {item.quantity}
-              </Text>
-
-              <Pressable
-                onPress={() => dispatch(addItem(item))}
-                style={[styles.circle, { backgroundColor: theme.primary }]}
-              >
-                <Text style={styles.controlText}>+</Text>
-              </Pressable>
-            </View>
-          </LinearGradient>
+          <CartItemComponent
+            item={item}
+            theme={theme}
+            onAdd={() => handleAddItem(item)}
+            onRemove={() => handleRemoveItem(item.id)}
+          />
         )}
       />
 
@@ -121,7 +167,7 @@ export default function CartPage() {
 
         <View style={{ alignItems: "flex-end" }}>
           <Pressable
-            onPress={() => dispatch(toggleTheme())}
+            onPress={handleToggleTheme}
             style={{ marginBottom: 8 }}
           >
             <Text style={{ color: "#FFF", opacity: 0.7, fontSize: 12 }}>
@@ -129,15 +175,7 @@ export default function CartPage() {
             </Text>
           </Pressable>
           <Pressable
-            onPress={() => {
-              try {
-                dispatch(clearCart());
-                Loggers.cart.info("Cart cleared, navigating to order success");
-                router.replace('/order-success');
-              } catch (error) {
-                Loggers.cart.error("Checkout failed", error);
-              }
-            }}
+            onPress={handleClearCart}
           >
             <Text style={styles.checkoutText}>Checkout →</Text>
           </Pressable>

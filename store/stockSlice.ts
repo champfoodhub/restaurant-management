@@ -1,197 +1,25 @@
-import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { getCurrentFlavor } from '../config/config';
-import { updateStock as dbUpdateStock, getAllStock } from '../database/db';
-import { Loggers } from '../utils/logger';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { stockInitialState } from './stock/stockSelectors';
+import * as thunks from './stock/stockThunks';
 
-// Generate unique ID
-const generateId = (): string => {
-  return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-};
+// Re-export thunks
+export const {
+  loadStock,
+  updateStockItem,
+  toggleStockStatus,
+  setInStockStatus,
+  setOutOfStockStatus,
+} = thunks;
 
-// Stock item interface
-export interface StockItem {
-  id: string;
-  menuItemId: string;
-  menuItemName: string;
-  quantity: number;
-  inStock: boolean;
-  lastUpdated: string;
-}
-
-// Stock state interface
-export interface StockState {
-  items: StockItem[];
-  loading: boolean;
-  error: string | null;
-}
-
-const initialState: StockState = {
-  items: [],
-  loading: false,
-  error: null,
-};
-
-// Async thunks
-
-/**
- * Load all stock for the current branch
- */
-export const loadStock = createAsyncThunk(
-  'stock/loadStock',
-  async () => {
-    const branchId = getCurrentFlavor(); // Use flavor as branch identifier
-    const stockData = await getAllStock(branchId);
-    Loggers.menu.info(`Loaded stock for branch: ${branchId}`);
-    return stockData;
-  }
-);
-
-/**
- * Update stock for a menu item (Branch only)
- */
-export const updateStockItem = createAsyncThunk(
-  'stock/updateStock',
-  async (
-    { menuItemId, menuItemName, quantity, inStock }: {
-      menuItemId: string;
-      menuItemName: string;
-      quantity: number;
-      inStock: boolean;
-    },
-    { rejectWithValue }
-  ) => {
-    try {
-      const branchId = getCurrentFlavor();
-      await dbUpdateStock(menuItemId, branchId, quantity);
-      
-      const now = new Date().toISOString();
-      
-      Loggers.menu.info(`Updated stock for ${menuItemName}: ${inStock ? 'In Stock' : 'Out of Stock'}`);
-      
-      return {
-        id: generateId(),
-        menuItemId,
-        menuItemName,
-        quantity,
-        inStock,
-        lastUpdated: now,
-      };
-    } catch (error) {
-      Loggers.menu.error('Failed to update stock', error);
-      return rejectWithValue('Failed to update stock');
-    }
-  }
-);
-
-/**
- * Toggle stock status (in stock/out of stock)
- */
-export const toggleStockStatus = createAsyncThunk(
-  'stock/toggleStatus',
-  async (
-    { menuItemId, menuItemName, currentStatus }: {
-      menuItemId: string;
-      menuItemName: string;
-      currentStatus: boolean;
-    },
-    { rejectWithValue }
-  ) => {
-    try {
-      const branchId = getCurrentFlavor();
-      const newStatus = !currentStatus;
-      const quantity = newStatus ? 100 : 0; // Default quantity based on status
-      
-      await dbUpdateStock(menuItemId, branchId, quantity);
-      
-      const now = new Date().toISOString();
-      
-      Loggers.menu.info(`Toggled stock for ${menuItemName}: ${newStatus ? 'In Stock' : 'Out of Stock'}`);
-      
-      return {
-        id: generateId(),
-        menuItemId,
-        menuItemName,
-        quantity,
-        inStock: newStatus,
-        lastUpdated: now,
-      };
-    } catch (error) {
-      Loggers.menu.error('Failed to toggle stock status', error);
-      return rejectWithValue('Failed to toggle stock status');
-    }
-  }
-);
-
-/**
- * Set stock status to in stock
- */
-export const setInStock = createAsyncThunk(
-  'stock/setInStock',
-  async (
-    { menuItemId, menuItemName }: { menuItemId: string; menuItemName: string },
-    { rejectWithValue }
-  ) => {
-    try {
-      const branchId = getCurrentFlavor();
-      await dbUpdateStock(menuItemId, branchId, 100); // Default in-stock quantity
-      
-      const now = new Date().toISOString();
-      
-      Loggers.menu.info(`Set ${menuItemName} as in stock`);
-      
-      return {
-        id: generateId(),
-        menuItemId,
-        menuItemName,
-        quantity: 100,
-        inStock: true,
-        lastUpdated: now,
-      };
-    } catch (error) {
-      Loggers.menu.error('Failed to set in stock', error);
-      return rejectWithValue('Failed to set in stock');
-    }
-  }
-);
-
-/**
- * Set stock status to out of stock
- */
-export const setOutOfStock = createAsyncThunk(
-  'stock/setOutOfStock',
-  async (
-    { menuItemId, menuItemName }: { menuItemId: string; menuItemName: string },
-    { rejectWithValue }
-  ) => {
-    try {
-      const branchId = getCurrentFlavor();
-      await dbUpdateStock(menuItemId, branchId, 0);
-      
-      const now = new Date().toISOString();
-      
-      Loggers.menu.info(`Set ${menuItemName} as out of stock`);
-      
-      return {
-        id: generateId(),
-        menuItemId,
-        menuItemName,
-        quantity: 0,
-        inStock: false,
-        lastUpdated: now,
-      };
-    } catch (error) {
-      Loggers.menu.error('Failed to set out of stock', error);
-      return rejectWithValue('Failed to set out of stock');
-    }
-  }
-);
+// Re-export selectors for backward compatibility
+export * from './stock/stockSelectors';
 
 // Stock slice
 const stockSlice = createSlice({
   name: 'stock',
-  initialState,
+  initialState: stockInitialState,
   reducers: {
-    setStockItems: (state, action: PayloadAction<StockItem[]>) => {
+    setStockItems: (state, action: PayloadAction<import('./stock/stockSelectors').StockItem[]>) => {
       state.items = action.payload;
     },
     clearStockError: (state) => {
@@ -205,15 +33,15 @@ const stockSlice = createSlice({
   extraReducers: (builder) => {
     // Load stock
     builder
-      .addCase(loadStock.pending, (state) => {
+      .addCase(thunks.loadStock.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(loadStock.fulfilled, (state, action) => {
+      .addCase(thunks.loadStock.fulfilled, (state, action) => {
         state.loading = false;
         // Convert stock data to StockItem format
         state.items = action.payload.map(item => ({
-          id: generateId(),
+          id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           menuItemId: item.menuItemId,
           menuItemName: '', // Will be populated when syncing with menu items
           quantity: item.quantity,
@@ -221,18 +49,18 @@ const stockSlice = createSlice({
           lastUpdated: new Date().toISOString(),
         }));
       })
-      .addCase(loadStock.rejected, (state, action) => {
+      .addCase(thunks.loadStock.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to load stock';
       });
 
     // Update stock item
     builder
-      .addCase(updateStockItem.pending, (state) => {
+      .addCase(thunks.updateStockItem.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(updateStockItem.fulfilled, (state, action) => {
+      .addCase(thunks.updateStockItem.fulfilled, (state, action) => {
         state.loading = false;
         const index = state.items.findIndex(item => item.menuItemId === action.payload.menuItemId);
         if (index !== -1) {
@@ -241,18 +69,18 @@ const stockSlice = createSlice({
           state.items.push(action.payload);
         }
       })
-      .addCase(updateStockItem.rejected, (state, action) => {
+      .addCase(thunks.updateStockItem.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
 
     // Toggle stock status
     builder
-      .addCase(toggleStockStatus.pending, (state) => {
+      .addCase(thunks.toggleStockStatus.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(toggleStockStatus.fulfilled, (state, action) => {
+      .addCase(thunks.toggleStockStatus.fulfilled, (state, action) => {
         state.loading = false;
         const index = state.items.findIndex(item => item.menuItemId === action.payload.menuItemId);
         if (index !== -1) {
@@ -261,18 +89,18 @@ const stockSlice = createSlice({
           state.items.push(action.payload);
         }
       })
-      .addCase(toggleStockStatus.rejected, (state, action) => {
+      .addCase(thunks.toggleStockStatus.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
 
     // Set in stock
     builder
-      .addCase(setInStock.pending, (state) => {
+      .addCase(thunks.setInStockStatus.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(setInStock.fulfilled, (state, action) => {
+      .addCase(thunks.setInStockStatus.fulfilled, (state, action) => {
         state.loading = false;
         const index = state.items.findIndex(item => item.menuItemId === action.payload.menuItemId);
         if (index !== -1) {
@@ -281,18 +109,18 @@ const stockSlice = createSlice({
           state.items.push(action.payload);
         }
       })
-      .addCase(setInStock.rejected, (state, action) => {
+      .addCase(thunks.setInStockStatus.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
 
     // Set out of stock
     builder
-      .addCase(setOutOfStock.pending, (state) => {
+      .addCase(thunks.setOutOfStockStatus.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(setOutOfStock.fulfilled, (state, action) => {
+      .addCase(thunks.setOutOfStockStatus.fulfilled, (state, action) => {
         state.loading = false;
         const index = state.items.findIndex(item => item.menuItemId === action.payload.menuItemId);
         if (index !== -1) {
@@ -301,7 +129,7 @@ const stockSlice = createSlice({
           state.items.push(action.payload);
         }
       })
-      .addCase(setOutOfStock.rejected, (state, action) => {
+      .addCase(thunks.setOutOfStockStatus.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
@@ -318,46 +146,6 @@ export const {
 // Export reducer
 export default stockSlice.reducer;
 
-// Selectors
-
-/**
- * Get all stock items
- */
-export const selectAllStockItems = (state: { stock: StockState }) => state.stock.items;
-
-/**
- * Get stock status for a specific menu item
- */
-export const selectStockByMenuItemId = (menuItemId: string) => (state: { stock: StockState }) =>
-  state.stock.items.find(item => item.menuItemId === menuItemId);
-
-/**
- * Check if a menu item is in stock
- */
-export const selectIsInStock = (menuItemId: string) => (state: { stock: StockState }) => {
-  const stockItem = state.stock.items.find(item => item.menuItemId === menuItemId);
-  return stockItem ? stockItem.inStock : true; // Default to true if no stock record
-};
-
-/**
- * Get loading state
- */
-export const selectStockLoading = (state: { stock: StockState }) => state.stock.loading;
-
-/**
- * Get stock error
- */
-export const selectStockError = (state: { stock: StockState }) => state.stock.error;
-
-/**
- * Get out of stock items
- */
-export const selectOutOfStockItems = (state: { stock: StockState }) =>
-  state.stock.items.filter(item => !item.inStock);
-
-/**
- * Get in stock items count
- */
-export const selectInStockCount = (state: { stock: StockState }) =>
-  state.stock.items.filter(item => item.inStock).length;
+// Export state type
+export type { StockState } from './stock/stockSelectors';
 

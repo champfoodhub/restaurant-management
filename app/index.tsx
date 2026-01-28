@@ -9,7 +9,7 @@ import {
   useColorScheme,
 } from "react-native";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import useSafeNavigation from "../hooks/useSafeNavigation";
 import { loadUserFromStorage } from "../store/authSlice";
 import { Flavor, loadFlavorFromStorage, saveFlavorToStorage, setFlavor } from "../store/flavorSlice";
@@ -41,32 +41,40 @@ const FLAVOR_OPTIONS: { id: Flavor; name: string; description: string; color: st
 ];
 
 export default function Home() {
-  const { safeReplace, safePush } = useSafeNavigation(200);
+  const { safeReplace, safePush } = useSafeNavigation(300); // Increased delay for better transition
   const dispatch = useAppDispatch();
   const mode = useAppSelector((state) => state.theme.mode);
   const flavor = useAppSelector((state) => state.flavor.currentFlavor);
   const flavorLoading = useAppSelector((state) => state.flavor.loading);
   const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
-  const loading = useAppSelector((state) => state.auth.loading);
+  const authLoading = useAppSelector((state) => state.auth.loading);
   const system = useColorScheme() ?? "light";
   const resolvedMode = mode === "light" || mode === "dark" ? mode : system;
 
-  const theme = getTheme(flavor, resolvedMode);
+  const theme = useMemo(() => getTheme(flavor, resolvedMode), [flavor, resolvedMode]);
 
-  // Load user from storage and redirect if logged in
+  // Combine loading states
+  const isLoading = authLoading || flavorLoading;
+
+  // Load user from storage and flavor on mount
   useEffect(() => {
     Loggers.auth.info("App started, loading user from storage");
     dispatch(loadUserFromStorage());
-    // Load saved flavor
     dispatch(loadFlavorFromStorage());
   }, [dispatch]);
 
   // Redirect to menu if already logged in using safe navigation
   useEffect(() => {
-    if (!loading && isLoggedIn) {
-      safeReplace("menu");
+    // Only redirect after loading is complete
+    if (!isLoading && isLoggedIn) {
+      // Add a small delay to ensure smooth transition
+      const timer = setTimeout(() => {
+        safeReplace("menu");
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
-  }, [loading, isLoggedIn, safeReplace]);
+  }, [isLoading, isLoggedIn, safeReplace]);
 
   const handleOrderNow = () => {
     safePush("order");
@@ -78,7 +86,7 @@ export default function Home() {
     Loggers.flavor.info(`Flavor changed to ${newFlavor}`, { newFlavor });
   };
 
-  if (loading || flavorLoading) {
+  if (isLoading) {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <ActivityIndicator size="large" color={theme.primary} />

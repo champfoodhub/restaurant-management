@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { memo, useCallback, useEffect, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -62,7 +62,8 @@ const FormInput = memo(({
   style, 
   theme,
   error,
-  showError: showErr
+  showError: showErr,
+  onBlur
 }: any) => (
   <View style={styles.inputGroup}>
     <Text style={[styles.label, { color: theme.text }]}>
@@ -82,6 +83,7 @@ const FormInput = memo(({
       keyboardType={keyboardType}
       maxLength={maxLength}
       multiline={multiline}
+      onBlur={onBlur}
     />
     {showErr && error && (
       <Text style={[styles.errorText, { color: theme.primary }]}>
@@ -132,17 +134,17 @@ OrderInitialView.displayName = "OrderInitialView";
 
 // Main component
 function OrderPage() {
-  const { safeReplace } = useSafeNavigation(200);
+  const { safeReplace } = useSafeNavigation(300);
   const dispatch = useAppDispatch();
   const mode = useAppSelector((state) => state.theme.mode);
   const flavor = useAppSelector((state) => state.flavor.currentFlavor);
   const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
-  const loading = useAppSelector((state) => state.auth.loading);
+  const authLoading = useAppSelector((state) => state.auth.loading);
   const user = useAppSelector((state) => state.auth.user);
   const system = useColorScheme() ?? "light";
   const resolvedMode = mode === "light" || mode === "dark" ? mode : system;
 
-  const theme = getTheme(flavor, resolvedMode);
+  const theme = useMemo(() => getTheme(flavor, resolvedMode), [flavor, resolvedMode]);
 
   const [formData, setFormData] = useState<FormData>({
     firstName: "",
@@ -156,6 +158,7 @@ function OrderPage() {
   const [showForm, setShowForm] = useState(false);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
+  const isLoading = authLoading;
 
   // Load user from storage on mount
   useEffect(() => {
@@ -178,10 +181,13 @@ function OrderPage() {
 
   // If logged in, redirect to menu using safe navigation
   useEffect(() => {
-    if (!loading && isLoggedIn) {
-      router.replace('/menu');
+    if (!isLoading && isLoggedIn) {
+      const timer = setTimeout(() => {
+        safeReplace("menu");
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [loading, isLoggedIn]);
+  }, [isLoading, isLoggedIn, safeReplace]);
 
   // Validate a single field and return error message if any
   const validateSingleField = useCallback((field: keyof FormData, value: string): string | undefined => {
@@ -205,7 +211,6 @@ function OrderPage() {
         return phoneResult.isValid ? undefined : phoneResult.error;
       }
       case "address": {
-        // Address is NOT trimmed to allow spaces after words
         const requiredResult = validateRequired(value, "Address");
         if (!requiredResult.isValid) return requiredResult.error;
         const minLengthResult = validateMinLength(value, "Address", 10);
@@ -226,11 +231,9 @@ function OrderPage() {
 
   // Handle input change with validation
   const handleInputChange = useCallback((field: keyof FormData, value: string) => {
-    // Sanitize input to prevent XSS
     const sanitizedValue = sanitizeInput(value);
     setFormData((prev) => ({ ...prev, [field]: sanitizedValue }));
     
-    // If field was touched, validate it
     if (touchedFields[field]) {
       const error = validateSingleField(field, sanitizedValue);
       setFormErrors((prev) => ({ ...prev, [field]: error }));
@@ -274,9 +277,14 @@ function OrderPage() {
 
     setIsSubmitting(true);
     try {
-      await dispatch(saveUserToStorage(formData) as any);
-      // Use router to navigate to menu page
-      router.replace('/menu');
+      await dispatch(saveUserToStorage(formData)).unwrap();
+      const timer = setTimeout(() => {
+        router.replace('/menu');
+      }, 100);
+      // Cleanup timer if component unmounts
+      return () => {
+        clearTimeout(timer);
+      };
     } catch (error) {
       Loggers.auth.error("Signup failed", error);
       showError("Error", AuthMessages.errors.saveUserFailed);
@@ -285,7 +293,7 @@ function OrderPage() {
     }
   }, [dispatch, formData, validateForm]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <ActivityIndicator size="large" color={theme.primary} />
@@ -293,7 +301,6 @@ function OrderPage() {
     );
   }
 
-  // Show form only after clicking Order Now
   if (!showForm) {
     return <OrderInitialView theme={theme} onOrderPress={() => setShowForm(true)} />;
   }
@@ -319,7 +326,6 @@ function OrderPage() {
         </View>
 
         <View style={styles.formContainer}>
-          {/* First Name */}
           <FormInput
             label="First Name"
             value={formData.firstName}
@@ -333,7 +339,6 @@ function OrderPage() {
             onBlur={() => handleBlur("firstName")}
           />
 
-          {/* Last Name */}
           <FormInput
             label="Last Name"
             value={formData.lastName}
@@ -347,7 +352,6 @@ function OrderPage() {
             onBlur={() => handleBlur("lastName")}
           />
 
-          {/* Phone */}
           <FormInput
             label="Phone Number"
             value={formData.phone}
@@ -363,7 +367,6 @@ function OrderPage() {
             onBlur={() => handleBlur("phone")}
           />
 
-          {/* Address */}
           <FormInput
             label="Address"
             value={formData.address}
@@ -380,7 +383,6 @@ function OrderPage() {
             onBlur={() => handleBlur("address")}
           />
 
-          {/* DOB */}
           <FormInput
             label="Date of Birth"
             value={formData.dob}
@@ -394,7 +396,6 @@ function OrderPage() {
             onBlur={() => handleBlur("dob")}
           />
 
-          {/* Email */}
           <FormInput
             label="Email ID"
             value={formData.email}
@@ -410,7 +411,6 @@ function OrderPage() {
             onBlur={() => handleBlur("email")}
           />
 
-          {/* Sign Up Button */}
           <Pressable
             style={[styles.orderButton, { backgroundColor: theme.primary }]}
             onPress={handleSubmit}
@@ -516,6 +516,6 @@ const styles = StyleSheet.create({
   },
 });
 
-// Export memoized component to prevent unnecessary re-renders
+// Export memoized component
 export default memo(OrderPage);
 

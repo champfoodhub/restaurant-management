@@ -19,7 +19,7 @@ import { showError } from "../utils/alertUtils";
 import { AuthMessages } from "../utils/errorMessages";
 import { Loggers } from "../utils/logger";
 
-// Memoized ProfileIcon to prevent re-creation on every render
+// Stable ProfileIcon reference to prevent re-creation on every render
 // This fixes the "specified child already has a parent" Android crash
 const ProfileIcon = memo(function ProfileIcon({
   isLoggedIn,
@@ -51,9 +51,11 @@ const ProfileIcon = memo(function ProfileIcon({
     </Pressable>
   );
 });
+ProfileIcon.displayName = 'ProfileIcon';
 
-// Stable header right component - prevents ScreenStackHeaderConfig crash
-const HeaderRight = memo(function HeaderRight({
+// Stable header right component reference - prevents ScreenStackHeaderConfig crash
+// Using useCallback instead of memo to ensure stable reference
+function HeaderRight({
   isLoggedIn,
   onPress,
   theme,
@@ -65,7 +67,7 @@ const HeaderRight = memo(function HeaderRight({
   loading: boolean;
 }) {
   return <ProfileIcon isLoggedIn={isLoggedIn} onPress={onPress} theme={theme} loading={loading} />;
-});
+}
 
 function NavigationWrapper() {
   const { safeReplace } = useSafeNavigation(200);

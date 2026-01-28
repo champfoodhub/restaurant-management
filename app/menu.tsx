@@ -169,7 +169,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   "Snacks": "restaurant",
 };
 
-// Helper function to handle stock toggle without Promise return type issues
+// Stock toggle helper - defined outside component
 const handleStockToggle = (
   dispatch: ReturnType<typeof useAppDispatch>,
   toggleStockStatus: typeof import("../store/stockSlice").toggleStockStatus,
@@ -249,35 +249,66 @@ export default function MenuPage() {
 
   // Initialize database and load data with timeout
   useEffect(() => {
+    let isMounted = true;
     const initData = async () => {
       try {
         Loggers.menu.info("Initializing menu data...");
 
-        // Create a timeout promise
+        // Create a timeout promise with user-friendly error
         const timeoutPromise = new Promise((_, reject) => {
           setTimeout(() => {
-            reject(new Error("Database initialization timed out"));
+            reject(new Error("DB_INIT_TIMEOUT"));
           }, DB_INIT_TIMEOUT);
         });
 
         // Race between initialization and timeout
-        await Promise.race([
-          dispatch(initializeMenuDatabase()).unwrap(),
-          timeoutPromise,
-        ]);
-
-        await dispatch(loadMenuItems()).unwrap();
-        await dispatch(loadSeasonalMenus()).unwrap();
-        Loggers.menu.info("Menu data loaded successfully");
-        setDbError(null);
+        try {
+          const result = await Promise.race([
+            dispatch(initializeMenuDatabase()).unwrap(),
+            timeoutPromise,
+          ]);
+          
+          if (isMounted) {
+            await dispatch(loadMenuItems()).unwrap();
+            await dispatch(loadSeasonalMenus()).unwrap();
+            Loggers.menu.info("Menu data loaded successfully");
+            setDbError(null);
+          }
+        } catch (initError) {
+          if (initError.message === "DB_INIT_TIMEOUT") {
+            Loggers.menu.warn("Database initialization timed out, using sample data");
+          } else {
+            Loggers.menu.error("Failed to initialize menu data", initError);
+          }
+          
+          if (isMounted) {
+            setDbError("Using sample menu data - database unavailable");
+            // Still try to load data (it might work or fallback to sample)
+            try {
+              await dispatch(loadMenuItems()).unwrap();
+            } catch {
+              Loggers.menu.warn("Could not load menu items, using sample data only");
+            }
+            try {
+              await dispatch(loadSeasonalMenus()).unwrap();
+            } catch {
+              Loggers.menu.warn("Could not load seasonal menus");
+            }
+          }
+        }
       } catch (error) {
-        Loggers.menu.error("Failed to initialize menu data", error);
-        setDbError("Using sample menu data - database unavailable");
-        // Continue with sample data
+        Loggers.menu.error("Unexpected error during menu initialization", error);
+        if (isMounted) {
+          setDbError("Using sample menu data");
+        }
       }
     };
 
     initData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [dispatch]);
 
   // Update seasonal menu manager when menus change
