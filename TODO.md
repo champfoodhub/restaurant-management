@@ -1,32 +1,36 @@
-# Task: HQ Menu Changes - Seasonal Menu Button and Add Items Feature
+# TODO: Stock and Menu Layout Update
 
-## Changes Required:
-1. ✅ Replace "View Cart" with "Seasonal Menu" button for HQ users
-2. ✅ Remove "Seasonal" button from header actions
-3. ✅ Add functionality to add existing menu items to seasonal menus
+## Task Summary
+Position stock indicator and stock toggle horizontally next to each other at the right-bottom corner of the menu card.
 
-## Implementation Summary:
+## Changes Required
 
-### Step 1: Modify the floating button in menu.tsx ✅
-- Changed "View Cart →" to "Seasonal Menu →" for HQ users
-- HQ users see "Seasonal Menu →" and clicking opens the seasonal menu list
-- Non-HQ users still see "View Cart →" with cart badge
+### 1. Update `renderMenuItem` in `app/menu.tsx`
+- [x] Remove stock indicator from absolute top-right position
+- [x] Create a new stock container with horizontal layout at bottom-right
+- [x] Move stock toggle to the stock container
+- [x] Add stock indicator next to the toggle horizontally
 
-### Step 2: Remove Seasonal button from header actions ✅
-- Removed the "Seasonal" button from `renderHeaderActions()` function
-- Now accessed via floating button
+### 2. Update Styles in `app/menu.tsx`
+- [x] Add `stockControlsContainer` style (position absolute, bottom: 10, right: 10, flexDirection: row, alignItems: center, gap)
+- [x] Update `itemContent` style to remove right padding for controls (since stock controls are now absolute)
+- [x] Keep `stockIndicator` style but remove absolute positioning from top-right
 
-### Step 3: Add "Add Items" functionality to seasonal menu modal ✅
-- Added state for selected seasonal menu and available items
-- Added a search bar to filter menu items
-- Added a scrollable list showing available menu items
-- Each item shows name, category, price, and "Add" button
-- Added functionality to assign items to seasonal menus via `assignItemToSeasonalMenu` dispatch
-- Added "+ Items" button to each seasonal menu in the list modal
+### 3. Add Light/Dark Mode Toggle for Branch Users
+- [x] Import `toggleTheme` from themeSlice
+- [x] Add theme toggle button in header actions (only visible for branch users)
+- [x] Button shows moon icon for light mode, sun icon for dark mode
 
-## Files Modified:
-- `app/menu.tsx` - Main changes for button text and add items feature
+## Implementation Plan
 
-## Status: Completed ✅
-All changes have been implemented successfully.
+1. Read the current menu.tsx file to understand the structure
+2. Modify the renderMenuItem function to restructure the stock controls
+3. Update the StyleSheet to add new styles for the bottom-right stock container
+4. Add theme toggle button for branch users
+5. Test the changes
+
+## Files to Modify
+- `app/menu.tsx` - Update renderMenuItem function, styles, and add theme toggle
+
+## Status: ✅ COMPLETED
 

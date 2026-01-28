@@ -41,6 +41,7 @@ import {
   selectAllStockItems,
   toggleStockStatus,
 } from "../store/stockSlice";
+import { toggleTheme } from "../store/themeSlice";
 import { getTheme } from "../theme";
 import { Loggers } from "../utils/logger";
 import { createSeasonalMenuManager, SeasonalMenuManager } from "../utils/seasonalMenu";
@@ -180,6 +181,7 @@ export default function MenuPage() {
   const mode = useAppSelector((state) => state.theme.mode);
   const flavor = useAppSelector((state) => state.flavor.currentFlavor);
   const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
+  const user = useAppSelector((state) => state.auth.user);
   const system = useColorScheme() ?? "light";
   const resolvedMode = mode === "light" || mode === "dark" ? mode : system;
 
@@ -204,6 +206,11 @@ export default function MenuPage() {
   const [seasonalMenuManager, setSeasonalMenuManager] = useState<SeasonalMenuManager | null>(null);
   const [dbError, setDbError] = useState<string | null>(null);
 
+  // Edit price modal state
+  const [showEditPriceModal, setShowEditPriceModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<ConfigMenuItem | null>(null);
+  const [newPrice, setNewPrice] = useState("");
+
   // New menu item form state
   const [newItemName, setNewItemName] = useState("");
   const [newItemDescription, setNewItemDescription] = useState("");
@@ -217,6 +224,13 @@ export default function MenuPage() {
   const [seasonalEndDate, setSeasonalEndDate] = useState("");
   const [seasonalStartTime, setSeasonalStartTime] = useState("12:00");
   const [seasonalEndTime, setSeasonalEndTime] = useState("23:59");
+
+  // Special Menu (Branch) state
+  const [showSpecialMenuModal, setShowSpecialMenuModal] = useState(false);
+  const [specialItemName, setSpecialItemName] = useState("");
+  const [specialItemDescription, setSpecialItemDescription] = useState("");
+  const [specialItemPrice, setSpecialItemPrice] = useState("");
+  const [specialItemCategory, setSpecialItemCategory] = useState("");
 
   // Calculate total items in cart for badge
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -306,18 +320,6 @@ export default function MenuPage() {
     return (
       <LinearGradient colors={theme.card as [string, string, ...string[]]} style={styles.card}>
         <Image source={{ uri: item.image }} style={styles.itemImage} />
-        
-        {/* Stock indicator for branch users */}
-        {canManageStock && (
-          <View style={[
-            styles.stockIndicator,
-            { backgroundColor: inStock ? "#10B981" : "#EF4444" }
-          ]}>
-            <Text style={styles.stockText}>
-              {inStock ? "In Stock" : "Out of Stock"}
-            </Text>
-          </View>
-        )}
 
         <View style={styles.itemContent}>
           <View style={styles.itemHeader}>
@@ -348,7 +350,7 @@ export default function MenuPage() {
             </View>
 
             {/* Add/Remove controls */}
-            {(isUser() || isBranch()) && inStock && (
+            {isUser() && inStock && (
               <>
                 {qty === 0 ? (
                   <Pressable
@@ -381,24 +383,6 @@ export default function MenuPage() {
               </>
             )}
 
-            {/* Stock toggle for branch */}
-            {canManageStock && (
-              <Switch
-                value={inStock}
-                onValueChange={() => {
-                  handleStockToggle(
-                    dispatch,
-                    toggleStockStatus,
-                    item.id,
-                    item.name,
-                    inStock
-                  );
-                }}
-                trackColor={{ false: "#767577", true: theme.primary }}
-                thumbColor="#FFFFFF"
-              />
-            )}
-
             {/* Delete button for HQ */}
             {canManageMenu && (
               <Pressable
@@ -410,6 +394,34 @@ export default function MenuPage() {
             )}
           </View>
         </View>
+
+        {/* Stock indicator and toggle at bottom-right corner - horizontally aligned */}
+        {canManageStock && (
+          <View style={styles.stockControlsContainer}>
+            <View style={[
+              styles.stockIndicator,
+              { backgroundColor: inStock ? "#10B981" : "#EF4444" }
+            ]}>
+              <Text style={styles.stockText}>
+                {inStock ? "In Stock" : "Out of Stock"}
+              </Text>
+            </View>
+            <Switch
+              value={inStock}
+              onValueChange={() => {
+                handleStockToggle(
+                  dispatch,
+                  toggleStockStatus,
+                  item.id,
+                  item.name,
+                  inStock
+                );
+              }}
+              trackColor={{ false: "#767577", true: theme.primary }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
+        )}
       </LinearGradient>
     );
   };
@@ -464,6 +476,33 @@ export default function MenuPage() {
     setSeasonalEndDate("");
   };
 
+  // Handle adding special menu item (Branch only)
+  const handleAddSpecialMenuItem = () => {
+    if (!specialItemName || !specialItemPrice || !specialItemCategory) {
+      Loggers.menu.warn("Please fill all required fields");
+      return;
+    }
+
+    const newItem: Omit<ConfigMenuItem, "id" | "createdAt" | "updatedAt"> = {
+      name: specialItemName,
+      description: specialItemDescription,
+      price: parseFloat(specialItemPrice),
+      basePrice: parseFloat(specialItemPrice),
+      image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400",
+      category: specialItemCategory,
+      isAvailable: true,
+      inStock: true,
+    };
+
+    dispatch(addMenuItem(newItem));
+    setShowSpecialMenuModal(false);
+    setSpecialItemName("");
+    setSpecialItemDescription("");
+    setSpecialItemPrice("");
+    setSpecialItemCategory("");
+    Loggers.menu.info(`Added special item: ${newItem.name}`);
+  };
+
   // Get items not already in the selected seasonal menu
   const getAvailableItemsForSeasonalMenu = useCallback(() => {
     if (!selectedSeasonalMenu) return [];
@@ -514,6 +553,23 @@ export default function MenuPage() {
           style={[styles.headerAction, { backgroundColor: theme.primary }]}
         >
           <Text style={styles.headerActionText}>+ Add</Text>
+        </Pressable>
+      );
+    }
+
+    // Theme toggle for branch users
+    if (isBranch()) {
+      actions.push(
+        <Pressable
+          key="theme"
+          onPress={() => dispatch(toggleTheme())}
+          style={[styles.headerAction, { backgroundColor: theme.muted, paddingHorizontal: 12 }]}
+        >
+          <Ionicons 
+            name={resolvedMode === "dark" ? "sunny" : "moon"} 
+            size={18} 
+            color={theme.text} 
+          />
         </Pressable>
       );
     }
@@ -586,6 +642,11 @@ export default function MenuPage() {
                   <Text style={[styles.headerTitle, { color: theme.text }]}>
                     {currentSeasonalMenu ? currentSeasonalMenu.name : "Our Menu"}
                   </Text>
+                  {isUser() && user?.address && (
+                    <Text style={[styles.locationText, { color: theme.text + "80" }]}>
+                      📍 {user.address}
+                    </Text>
+                  )}
                   <Text style={[styles.headerSubtitle, { color: theme.text + "80" }]}>
                     {isLoggedIn ? `Welcome, ${isHQ() ? "HQ Admin" : isBranch() ? "Branch Admin" : "Customer"}!` : "Please sign in to order"}
                   </Text>
@@ -602,18 +663,22 @@ export default function MenuPage() {
         onPress={() => {
           if (isHQ()) {
             setShowSeasonalMenuList(true);
+          } else if (isBranch()) {
+            setShowSpecialMenuModal(true);
           } else {
             safePush("cart");
           }
         }} 
         style={[styles.cartButton, { backgroundColor: theme.primary }]}
       >
-        {totalItems > 0 && !isHQ() && (
+        {totalItems > 0 && !isHQ() && !isBranch() && (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{totalItems}</Text>
           </View>
         )}
-        <Text style={styles.cartText}>{isHQ() ? "Seasonal Menu →" : "View Cart →"}</Text>
+        <Text style={styles.cartText}>
+          {isHQ() ? "Seasonal Menu →" : isBranch() ? "Special Menu →" : "View Cart →"}
+        </Text>
       </Pressable>
 
       {/* Add Menu Item Modal (HQ Only) */}
@@ -836,6 +901,59 @@ export default function MenuPage() {
           </View>
         </View>
       </Modal>
+
+      {/* Special Menu Modal (Branch Only) - Add Special Food Items */}
+      <Modal visible={showSpecialMenuModal} animationType="slide" transparent={true} onRequestClose={() => setShowSpecialMenuModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.background }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Add Special Food Item</Text>
+            <Text style={[styles.modalSubtitle, { color: theme.text + "80" }]}>
+              Add a special item to the menu with custom pricing
+            </Text>
+
+            <TextInput
+              style={[styles.input, { borderColor: theme.border, color: theme.text }]}
+              placeholder="Food Name *"
+              placeholderTextColor={theme.text + "80"}
+              value={specialItemName}
+              onChangeText={setSpecialItemName}
+            />
+            <TextInput
+              style={[styles.input, { borderColor: theme.border, color: theme.text }]}
+              placeholder="Description"
+              placeholderTextColor={theme.text + "80"}
+              value={specialItemDescription}
+              onChangeText={setSpecialItemDescription}
+              multiline
+              numberOfLines={3}
+            />
+            <TextInput
+              style={[styles.input, { borderColor: theme.border, color: theme.text }]}
+              placeholder="Price (₹) *"
+              placeholderTextColor={theme.text + "80"}
+              value={specialItemPrice}
+              onChangeText={setSpecialItemPrice}
+              keyboardType="numeric"
+            />
+            <TextInput
+              style={[styles.input, { borderColor: theme.border, color: theme.text }]}
+              placeholder="Category * (e.g., Main Course, Appetizer, Special)"
+              placeholderTextColor={theme.text + "80"}
+              value={specialItemCategory}
+              onChangeText={setSpecialItemCategory}
+            />
+
+            <View style={styles.modalButtons}>
+              <Pressable onPress={() => setShowSpecialMenuModal(false)} style={[styles.modalButton, { backgroundColor: theme.muted }]}>
+                <Text style={[styles.modalButtonText, { color: theme.text }]}>Cancel</Text>
+              </Pressable>
+              <Pressable onPress={handleAddSpecialMenuItem} style={[styles.modalButton, { backgroundColor: theme.primary }]}>
+                <Text style={styles.modalButtonText}>Add Special</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -845,6 +963,7 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   headerTitle: { fontSize: 28, fontWeight: "800", marginBottom: 4 },
   headerSubtitle: { fontSize: 16 },
+  locationText: { fontSize: 14, marginBottom: 4 },
   headerAction: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20 },
   headerActionText: { color: "#FFF", fontWeight: "600", fontSize: 14 },
   categoryContainer: { maxHeight: 50, marginBottom: 8 },
@@ -855,15 +974,16 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 16, fontSize: 16 },
   dbErrorBanner: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
   dbErrorText: { flex: 1, fontSize: 14, fontWeight: "600" },
-  card: { borderRadius: 16, padding: 12, marginBottom: 12, flexDirection: "row", elevation: 4 },
-  stockIndicator: { position: "absolute", top: 8, right: 8, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  card: { borderRadius: 12, padding: 12, marginBottom: 16, flexDirection: "row", elevation: 2 },
+  stockControlsContainer: { position: "absolute", bottom: 10, right: 10, flexDirection: "row", alignItems: "center", gap: 8 },
+  stockIndicator: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   stockText: { color: "#FFF", fontSize: 10, fontWeight: "600" },
-  itemImage: { width: 100, height: 100, borderRadius: 12 },
-  itemContent: { flex: 1, paddingLeft: 12, justifyContent: "center" },
-  itemHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
+  itemImage: { width: 90, height: 90, borderRadius: 10 },
+  itemContent: { flex: 1, paddingLeft: 14, justifyContent: "center" },
+  itemHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
   itemName: { fontSize: 18, fontWeight: "700", marginBottom: 4, flex: 1 },
-  itemDesc: { fontSize: 13, marginBottom: 8 },
-  row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  itemDesc: { fontSize: 13, marginBottom: 12 },
+  row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 16 },
   itemPrice: { fontSize: 18, fontWeight: "700" },
   basePrice: { fontSize: 12, textDecorationLine: "line-through" },
   addButton: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20 },
@@ -886,7 +1006,8 @@ const styles = StyleSheet.create({
   badgeText: { color: "#FFF", fontSize: 12, fontWeight: "700" },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0, 0, 0, 0.5)", justifyContent: "center", alignItems: "center" },
   modalContent: { width: "90%", maxHeight: "80%", borderRadius: 16, padding: 20, elevation: 8 },
-  modalTitle: { fontSize: 20, fontWeight: "700", marginBottom: 16 },
+  modalTitle: { fontSize: 20, fontWeight: "700", marginBottom: 8 },
+  modalSubtitle: { fontSize: 14, marginBottom: 16 },
   inputLabel: { fontSize: 14, fontWeight: "600", marginBottom: 8, marginTop: 8 },
   input: { borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 16, marginBottom: 8 },
   modalButtons: { flexDirection: "row", justifyContent: "flex-end", gap: 12, marginTop: 16 },

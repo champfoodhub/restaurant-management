@@ -500,11 +500,25 @@ export default menuSlice.reducer;
 export const selectAllMenuItems = (state: { menu: MenuState }) => state.menu.items;
 
 /**
- * Get all categories
+ * Get all categories (memoized with stable reference)
  */
+let cachedCategories: string[] | null = null;
+let lastItemsReference: MenuItem[] | null = null;
+
 export const selectCategories = (state: { menu: MenuState }) => {
-  const categories = new Set(state.menu.items.map(item => item.category));
-  return Array.from(categories);
+  const items = state.menu.items;
+  
+  // Return cached categories if items reference hasn't changed
+  if (cachedCategories !== null && lastItemsReference === items) {
+    return cachedCategories;
+  }
+  
+  // Compute and cache
+  const categories = new Set(items.map(item => item.category));
+  cachedCategories = Array.from(categories);
+  lastItemsReference = items;
+  
+  return cachedCategories;
 };
 
 /**
