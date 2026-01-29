@@ -231,13 +231,13 @@ export const assignItemToSeasonalMenu = createAsyncThunk(
   'menu/assignItemToSeasonalMenu',
   async (
     { menuItemId, seasonalMenuId }: { menuItemId: string; seasonalMenuId: string },
-    { rejectWithValue }
+    { rejectWithValue, getState }
   ) => {
     try {
       await assignMenuItemToSeasonalMenu(menuItemId, seasonalMenuId);
       
-      // Get the updated item from menu items
-      const state = { menu: { items: [] as MenuItem[], seasonalMenus: [] as SeasonalMenu[] } };
+      // Get the updated item from actual Redux state
+      const state = getState() as { menu: MenuState };
       const { items } = state.menu;
       const item = items.find(i => i.id === menuItemId);
       

@@ -7,6 +7,16 @@
 import { Alert, AlertButton, AlertOptions } from "react-native";
 
 /**
+ * Log levels for logging functionality
+ */
+export enum LogLevel {
+  DEBUG = 0,
+  INFO = 1,
+  WARN = 2,
+  ERROR = 3,
+}
+
+/**
  * Alert button configurations
  */
 const OK_BUTTON: AlertButton = { text: "OK" };

@@ -701,7 +701,7 @@ export default function MenuPage() {
           </View>
         )}
         <Text style={styles.cartText}>
-          {isHQ() ? "Seasonal Menu →" : isBranch() ? "Special Menu →" : "View Cart →"}
+          {isHQ() ? "Seasonal Menu →" : isBranch() ? "Special Food →" : "View Cart →"}
         </Text>
       </Pressable>
 

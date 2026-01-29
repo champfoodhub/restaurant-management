@@ -483,6 +483,7 @@ export interface StockRow {
   branchId: string;
   quantity: number;
   lastUpdated: string;
+  menuItemName?: string;
 }
 
 /**
@@ -517,16 +518,20 @@ export async function getStock(menuItemId: string, branchId: string): Promise<nu
 /**
  * Get all stock for a branch
  */
-export async function getAllStock(branchId: string): Promise<{ menuItemId: string; quantity: number }[]> {
+export async function getAllStock(branchId: string): Promise<{ menuItemId: string; menuItemName: string; quantity: number }[]> {
   const database = getDatabase();
   
   const result = await database.getAllAsync<StockRow>(
-    'SELECT menuItemId, quantity FROM stock WHERE branchId = ?',
+    `SELECT s.menuItemId, s.quantity, m.name as menuItemName 
+     FROM stock s 
+     LEFT JOIN menu_items m ON s.menuItemId = m.id 
+     WHERE s.branchId = ?`,
     [branchId]
   );
   
   return result.map(row => ({
     menuItemId: row.menuItemId,
+    menuItemName: row.menuItemName || 'Unknown Item',
     quantity: row.quantity,
   }));
 }
