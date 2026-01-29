@@ -323,6 +323,78 @@ export function getAvailableItems(items: MenuItem[]): MenuItem[] {
 }
 
 /**
+ * Check if a specific seasonal menu is currently active based on date and time
+ */
+export function isSeasonalMenuActive(menu: SeasonalMenu): boolean {
+  const currentDate = getCurrentDate();
+  const currentTime = getCurrentTime();
+  
+  // Check if menu is active
+  if (!menu.isActive) return false;
+  
+  // Check date range
+  const isInDateRange = currentDate >= menu.startDate && currentDate <= menu.endDate;
+  if (!isInDateRange) return false;
+  
+  // Check time range
+  return isTimeInRange(menu.startTime, menu.endTime);
+}
+
+/**
+ * Get items that are currently available based on their seasonal menu time constraints
+ * Only filters items that belong to seasonal menus - regular items are always shown
+ */
+export function getTimeFilteredItems(items: MenuItem[], seasonalMenus: SeasonalMenu[]): MenuItem[] {
+  const now = new Date();
+  const currentTime = getCurrentTime();
+  const currentDate = getCurrentDate();
+  
+  return items.filter(item => {
+    // Regular items (no seasonal menu) are always shown
+    if (!item.seasonalMenuId) return true;
+    
+    // Find the seasonal menu for this item
+    const seasonalMenu = seasonalMenus.find(m => m.id === item.seasonalMenuId);
+    if (!seasonalMenu) return true; // If menu not found, show item
+    
+    // Check if menu is active
+    if (!seasonalMenu.isActive) return false;
+    
+    // Check date range
+    const isInDateRange = currentDate >= seasonalMenu.startDate && currentDate <= seasonalMenu.endDate;
+    if (!isInDateRange) return false;
+    
+    // Check time range
+    return isTimeInRange(seasonalMenu.startTime, seasonalMenu.endTime);
+  });
+}
+
+/**
+ * Get items that should be hidden based on seasonal menu time constraints
+ */
+export function getHiddenItemsDueToTime(items: MenuItem[], seasonalMenus: SeasonalMenu[]): MenuItem[] {
+  const currentTime = getCurrentTime();
+  const currentDate = getCurrentDate();
+  
+  return items.filter(item => {
+    // Only items with seasonal menus can be hidden
+    if (!item.seasonalMenuId) return false;
+    
+    // Find the seasonal menu for this item
+    const seasonalMenu = seasonalMenus.find(m => m.id === item.seasonalMenuId);
+    if (!seasonalMenu) return false;
+    
+    // Check if menu is active and within time range
+    if (!seasonalMenu.isActive) return true;
+    
+    const isInDateRange = currentDate >= seasonalMenu.startDate && currentDate <= seasonalMenu.endDate;
+    if (!isInDateRange) return true;
+    
+    return !isTimeInRange(seasonalMenu.startTime, seasonalMenu.endTime);
+  });
+}
+
+/**
  * Create a seasonal menu manager instance
  */
 export function createSeasonalMenuManager(menus: SeasonalMenu[]): SeasonalMenuManager {

@@ -2,11 +2,14 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 import { Loggers } from "../utils/logger";
 
+export type CartItemType = 'regular' | 'seasonal' | 'special';
+
 export type CartItem = {
   id: string;
   name: string;
   price: number;
   quantity: number;
+  itemType?: CartItemType;
 };
 
 export interface CartState {
@@ -19,11 +22,14 @@ const initialState: CartState = {
   error: null,
 };
 
+// Payload type for adding items with itemType
+export type AddItemPayload = Omit<CartItem, "quantity"> & { itemType?: CartItemType };
+
 export const cartSlice = createSlice({
   name: "cart",
   initialState,
   reducers: {
-    addItem: (state, action: PayloadAction<Omit<CartItem, "quantity">>) => {
+    addItem: (state, action: PayloadAction<AddItemPayload>) => {
       const existing = state.items.find((i) => i.id === action.payload.id);
       if (existing) {
         state.items = state.items.map((i) =>
@@ -33,8 +39,10 @@ export const cartSlice = createSlice({
         );
         Loggers.cart.info(`Increased quantity for ${action.payload.name}`);
       } else {
-        state.items.push({ ...action.payload, quantity: 1 });
-        Loggers.cart.info(`Added new item: ${action.payload.name}`);
+        // Preserve itemType if provided, otherwise default to 'regular'
+        const itemType = action.payload.itemType || 'regular';
+        state.items.push({ ...action.payload, quantity: 1, itemType });
+        Loggers.cart.info(`Added new item: ${action.payload.name} (${itemType})`);
       }
       state.error = null;
     },

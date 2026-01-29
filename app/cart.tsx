@@ -77,13 +77,24 @@ export default function CartPage() {
             colors={theme.card}
             style={styles.card}
           >
-            <View>
+            <View style={styles.itemInfo}>
               <Text style={[styles.name, { color: theme.text }]}>
                 {item.name}
               </Text>
               <Text style={[styles.price, { color: theme.accent }]}>
                 ₹{item.price} × {item.quantity}
               </Text>
+              {/* Item Type Badge */}
+              {item.itemType === 'seasonal' && (
+                <View style={[styles.itemTypeBadge, { backgroundColor: '#8B5CF6' }]}>
+                  <Text style={styles.itemTypeBadgeText}>🍁 Seasonal Menu</Text>
+                </View>
+              )}
+              {item.itemType === 'special' && (
+                <View style={[styles.itemTypeBadge, { backgroundColor: '#F59E0B' }]}>
+                  <Text style={styles.itemTypeBadgeText}>⭐ Special Food</Text>
+                </View>
+              )}
             </View>
 
             <View style={styles.controls}>
@@ -167,6 +178,25 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 15,
     fontWeight: "600",
+  },
+
+  itemInfo: {
+    flex: 1,
+    paddingRight: 12,
+  },
+
+  itemTypeBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+
+  itemTypeBadgeText: {
+    color: "#FFF",
+    fontSize: 11,
+    fontWeight: "700",
   },
 
   controls: {

@@ -29,6 +29,7 @@ export interface MenuState {
   loading: boolean;
   error: string | null;
   selectedCategory: string | null;
+  lastTimeRefresh: number; // Timestamp for periodic refresh
 }
 
 const initialState: MenuState = {
@@ -39,6 +40,7 @@ const initialState: MenuState = {
   loading: false,
   error: null,
   selectedCategory: null,
+  lastTimeRefresh: 0,
 };
 
 export const initializeMenuDatabase = createAsyncThunk(
@@ -220,7 +222,26 @@ export const refreshCurrentSeasonalMenu = createAsyncThunk(
     const currentMenu = manager.getCurrentSeasonalMenu();
     const activeMenus = manager.getAllCurrentlyActiveMenus();
     
-    return { currentMenu, activeMenus };
+    return { currentMenu, activeMenus, timestamp: Date.now() };
+  }
+);
+
+/**
+ * Force refresh current seasonal menu based on time (called periodically)
+ */
+export const forceRefreshSeasonalMenu = createAsyncThunk(
+  'menu/forceRefreshSeasonalMenu',
+  async (_, { getState }) => {
+    const state = getState() as { menu: MenuState };
+    const seasonalMenus = state.menu.seasonalMenus;
+    
+    // Create manager locally for computation
+    const { createSeasonalMenuManager, isSeasonalMenuActive } = await import('../utils/seasonalMenu');
+    const manager = createSeasonalMenuManager(seasonalMenus);
+    const currentMenu = manager.getCurrentSeasonalMenu();
+    const activeMenus = manager.getAllCurrentlyActiveMenus();
+    
+    return { currentMenu, activeMenus, timestamp: Date.now() };
   }
 );
 
@@ -432,6 +453,15 @@ const menuSlice = createSlice({
       .addCase(refreshCurrentSeasonalMenu.fulfilled, (state, action) => {
         state.currentSeasonalMenu = action.payload.currentMenu;
         state.activeSeasonalMenus = action.payload.activeMenus;
+        state.lastTimeRefresh = action.payload.timestamp;
+      });
+
+    // Force refresh seasonal menu (for periodic time-based updates)
+    builder
+      .addCase(forceRefreshSeasonalMenu.fulfilled, (state, action) => {
+        state.currentSeasonalMenu = action.payload.currentMenu;
+        state.activeSeasonalMenus = action.payload.activeMenus;
+        state.lastTimeRefresh = action.payload.timestamp;
       });
 
     // Assign item to seasonal menu
@@ -567,4 +597,14 @@ export const selectMenuError = (state: { menu: MenuState }) => state.menu.error;
  */
 export const selectMenuItemById = (id: string) => (state: { menu: MenuState }) =>
   state.menu.items.find(item => item.id === id);
+
+/**
+ * Get last time refresh timestamp
+ */
+export const selectLastTimeRefresh = (state: { menu: MenuState }) => state.menu.lastTimeRefresh;
+
+/**
+ * Get active seasonal menus (currently within time range)
+ */
+export const selectActiveSeasonalMenus = (state: { menu: MenuState }) => state.menu.activeSeasonalMenus;
 

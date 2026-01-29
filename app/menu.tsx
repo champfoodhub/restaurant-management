@@ -28,9 +28,11 @@ import {
   assignItemToSeasonalMenu,
   deleteMenuItem,
   deleteSeasonalMenu,
+  forceRefreshSeasonalMenu,
   initializeMenuDatabase,
   loadMenuItems,
   loadSeasonalMenus,
+  refreshCurrentSeasonalMenu,
   selectAllMenuItems,
   selectAllSeasonalMenus,
   selectCategories,
@@ -44,7 +46,7 @@ import {
 import { toggleTheme } from "../store/themeSlice";
 import { getTheme } from "../theme";
 import { Loggers } from "../utils/logger";
-import { createSeasonalMenuManager, SeasonalMenuManager } from "../utils/seasonalMenu";
+import { createSeasonalMenuManager, SeasonalMenuManager, getTimeFilteredItems } from "../utils/seasonalMenu";
 
 // Sample menu items for initial display (fallback when no database)
 const sampleMenuItems: ConfigMenuItem[] = [
@@ -287,25 +289,43 @@ export default function MenuPage() {
     }
   }, [seasonalMenus]);
 
+  // Periodic refresh of seasonal menu based on time (every 30 seconds)
+  useEffect(() => {
+    // Initial refresh
+    dispatch(refreshCurrentSeasonalMenu());
+    
+    const refreshInterval = setInterval(() => {
+      dispatch(forceRefreshSeasonalMenu());
+      Loggers.menu.debug("Periodic seasonal menu refresh triggered");
+    }, 30000); // Refresh every 30 seconds
+    
+    return () => {
+      clearInterval(refreshInterval);
+    };
+  }, [dispatch]);
+
   // Ensure user is loaded
   useEffect(() => {
     Loggers.auth.info("Loading user from storage");
     dispatch(loadUserFromStorage());
   }, [dispatch]);
 
-  // Get displayed menu items based on current seasonal menu
+  // Get displayed menu items based on current seasonal menu and time constraints
   const getDisplayedItems = useCallback(() => {
-    if (currentSeasonalMenu && isHQ()) {
+    // For HQ admin, show all items (for management purposes)
+    if (isHQ()) {
       return menuItems.length > 0 ? menuItems : sampleMenuItems;
     }
-    if (currentSeasonalMenu) {
-      const seasonalItems = menuItems.filter(
-        (item) => item.seasonalMenuId === currentSeasonalMenu.id
-      );
-      if (seasonalItems.length > 0) return seasonalItems;
+    
+    // For regular users and branch, apply time-based filtering
+    if (menuItems.length > 0) {
+      // Filter items based on time constraints
+      const timeFilteredItems = getTimeFilteredItems(menuItems, seasonalMenus);
+      if (timeFilteredItems.length > 0) return timeFilteredItems;
     }
+    
     return menuItems.length > 0 ? menuItems : sampleMenuItems;
-  }, [menuItems, currentSeasonalMenu]);
+  }, [menuItems, seasonalMenus, currentSeasonalMenu]);
 
   // Filter by category
   const displayedItems = selectedCategory
@@ -367,7 +387,14 @@ export default function MenuPage() {
                 {qty === 0 ? (
                   <Pressable
                     onPress={() =>
-                      dispatch(addItem({ id: item.id, name: item.name, price: item.price }))
+                      dispatch(addItem({ 
+                        id: item.id, 
+                        name: item.name, 
+                        price: item.price,
+                        itemType: item.seasonalMenuId 
+                          ? 'seasonal' 
+                          : (item.category.includes('Special') ? 'special' : 'regular')
+                      }))
                     }
                     style={[styles.addButton, { backgroundColor: theme.primary }]}
                   >
@@ -384,7 +411,14 @@ export default function MenuPage() {
                     <Text style={[styles.qty, { color: theme.text }]}>{qty}</Text>
                     <Pressable
                       onPress={() =>
-                        dispatch(addItem({ id: item.id, name: item.name, price: item.price }))
+                        dispatch(addItem({ 
+                          id: item.id, 
+                          name: item.name, 
+                          price: item.price,
+                          itemType: item.seasonalMenuId 
+                            ? 'seasonal' 
+                            : (item.category.includes('Special') ? 'special' : 'regular')
+                        }))
                       }
                       style={[styles.circle, { backgroundColor: theme.primary }]}
                     >
@@ -495,13 +529,18 @@ export default function MenuPage() {
       return;
     }
 
+    // Add "Special" prefix to category to mark this as special food
+    const specialCategory = specialItemCategory.includes('Special') 
+      ? specialItemCategory 
+      : `Special - ${specialItemCategory}`;
+
     const newItem: Omit<ConfigMenuItem, "id" | "createdAt" | "updatedAt"> = {
       name: specialItemName,
       description: specialItemDescription,
       price: parseFloat(specialItemPrice),
       basePrice: parseFloat(specialItemPrice),
       image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400",
-      category: specialItemCategory,
+      category: specialCategory,
       isAvailable: true,
       inStock: true,
     };
@@ -599,16 +638,7 @@ export default function MenuPage() {
         </View>
       )}
 
-      {/* Seasonal Menu Banner */}
-      {currentSeasonalMenu && (
-        <View style={[styles.seasonalBanner, { backgroundColor: theme.primary }]}>
-          <Text style={styles.seasonalBannerTitle}>🎉 {currentSeasonalMenu.name}</Text>
-          <Text style={styles.seasonalBannerSubtitle}>{currentSeasonalMenu.description}</Text>
-          <Text style={styles.seasonalBannerTime}>
-            {seasonalMenuManager?.formatTimeRange(currentSeasonalMenu.startTime, currentSeasonalMenu.endTime)}
-          </Text>
-        </View>
-      )}
+
 
       {/* Category Filter */}
       {categories.length > 0 && (
