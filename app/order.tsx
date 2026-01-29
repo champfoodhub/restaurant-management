@@ -18,8 +18,10 @@ import {
 import useSafeNavigation from "../hooks/useSafeNavigation";
 import { loadUserFromStorage, saveUserToStorage } from "../store/authSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { appStyles } from "../styles";
 import { getTheme } from "../theme";
 import { showError } from "../utils/alertUtils";
+import { withOpacity } from "../utils/colorUtils";
 import { AuthMessages } from "../utils/errorMessages";
 import { Loggers } from "../utils/logger";
 import {
@@ -65,13 +67,13 @@ const FormInput = memo(({
   showError: showErr,
   onBlur
 }: any) => (
-  <View style={styles.inputGroup}>
-    <Text style={[styles.label, { color: theme.text }]}>
+  <View style={appStyles.order.inputGroup}>
+    <Text style={[appStyles.order.label, { color: theme.text }]}>
       {label}
     </Text>
     <TextInput
       style={[
-        styles.input, 
+        appStyles.order.input, 
         { backgroundColor: theme.muted, color: theme.text }, 
         style,
         showErr && error ? { borderWidth: 1, borderColor: theme.primary } : {}
@@ -86,7 +88,7 @@ const FormInput = memo(({
       onBlur={onBlur}
     />
     {showErr && error && (
-      <Text style={[styles.errorText, { color: theme.primary }]}>
+      <Text style={[appStyles.order.errorText, { color: theme.primary }]}>
         {error}
       </Text>
     )}
@@ -96,34 +98,34 @@ FormInput.displayName = "FormInput";
 
 // Memoized initial view component
 const OrderInitialView = memo(({ theme, onOrderPress }: { theme: any; onOrderPress: () => void }) => (
-  <View style={{ flex: 1, backgroundColor: theme.background }}>
+  <View style={[appStyles.order.container, { backgroundColor: theme.background }]}>
     <LinearGradient
       colors={[
-        theme.primary + "20",
-        theme.accent + "10",
+        withOpacity(theme.primary, 0.12),
+        withOpacity(theme.accent, 0.06),
       ]}
       style={StyleSheet.absoluteFill}
     />
     
-    <View style={styles.orderContainer}>
-      <View style={styles.orderCard}>
-        <View style={[styles.iconContainer, { backgroundColor: theme.primary }]}>
+    <View style={appStyles.order.orderContainer}>
+      <View style={appStyles.order.orderCard}>
+        <View style={[appStyles.order.iconContainer, { backgroundColor: theme.primary }]}>
           <Ionicons name="restaurant-outline" size={48} color="#FFF" />
         </View>
         
-        <Text style={[styles.orderTitle, { color: theme.text }]}>
+        <Text style={[appStyles.order.orderTitle, { color: theme.text }]}>
           Ready to Order?
         </Text>
         
-        <Text style={[styles.orderSubtitle, { color: theme.text + "80" }]}>
+        <Text style={[appStyles.order.orderSubtitle, { color: withOpacity(theme.text, 0.5) }]}>
           Please fill in your details to get started with your food order.
         </Text>
 
         <Pressable
-          style={[styles.orderButton, { backgroundColor: theme.primary }]}
+          style={[appStyles.order.orderButton, { backgroundColor: theme.primary }]}
           onPress={onOrderPress}
         >
-          <Text style={styles.orderButtonText}>Order Now</Text>
+          <Text style={appStyles.order.orderButtonText}>Order Now</Text>
           <Ionicons name="arrow-forward" size={20} color="#FFF" style={{ marginLeft: 8 }} />
         </Pressable>
       </View>
@@ -181,6 +183,7 @@ function OrderPage() {
 
   // If logged in, redirect to menu using safe navigation
   useEffect(() => {
+    // Only redirect after loading is complete and user is logged in
     if (!isLoading && isLoggedIn) {
       const timer = setTimeout(() => {
         safeReplace("menu");
@@ -278,13 +281,10 @@ function OrderPage() {
     setIsSubmitting(true);
     try {
       await dispatch(saveUserToStorage(formData)).unwrap();
-      const timer = setTimeout(() => {
+      // Navigate after a small delay to allow state to update
+      setTimeout(() => {
         router.replace('/menu');
       }, 100);
-      // Cleanup timer if component unmounts
-      return () => {
-        clearTimeout(timer);
-      };
     } catch (error) {
       Loggers.auth.error("Signup failed", error);
       showError("Error", AuthMessages.errors.saveUserFailed);
@@ -295,7 +295,7 @@ function OrderPage() {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[appStyles.order.container, { backgroundColor: theme.background }]}>
         <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
@@ -307,31 +307,31 @@ function OrderPage() {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: theme.background }]}
+      style={[appStyles.order.container, { backgroundColor: theme.background }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
     >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={appStyles.order.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.header}>
+        <View style={appStyles.order.header}>
           <Pressable onPress={() => setShowForm(false)}>
             <Ionicons name="arrow-back" size={24} color={theme.text} />
           </Pressable>
-          <Text style={[styles.title, { color: theme.text }]}>
+          <Text style={[appStyles.order.title, { color: theme.text }]}>
             Sign Up
           </Text>
         </View>
 
-        <View style={styles.formContainer}>
+        <View style={appStyles.order.formContainer}>
           <FormInput
             label="First Name"
             value={formData.firstName}
             onChangeText={(value: string) => handleInputChange("firstName", value)}
             placeholder="Enter first name"
-            placeholderTextColor={theme.text + "80"}
+            placeholderTextColor={withOpacity(theme.text, 0.5)}
             theme={theme}
             returnKeyType="next"
             error={formErrors.firstName}
@@ -344,7 +344,7 @@ function OrderPage() {
             value={formData.lastName}
             onChangeText={(value: string) => handleInputChange("lastName", value)}
             placeholder="Enter last name"
-            placeholderTextColor={theme.text + "80"}
+            placeholderTextColor={withOpacity(theme.text, 0.5)}
             theme={theme}
             returnKeyType="next"
             error={formErrors.lastName}
@@ -357,7 +357,7 @@ function OrderPage() {
             value={formData.phone}
             onChangeText={(value: string) => handleInputChange("phone", value)}
             placeholder="Enter phone number"
-            placeholderTextColor={theme.text + "80"}
+            placeholderTextColor={withOpacity(theme.text, 0.5)}
             theme={theme}
             keyboardType="phone-pad"
             maxLength={10}
@@ -372,7 +372,7 @@ function OrderPage() {
             value={formData.address}
             onChangeText={(value: string) => handleInputChange("address", value)}
             placeholder="Enter address"
-            placeholderTextColor={theme.text + "80"}
+            placeholderTextColor={withOpacity(theme.text, 0.5)}
             theme={theme}
             multiline
             numberOfLines={3}
@@ -388,7 +388,7 @@ function OrderPage() {
             value={formData.dob}
             onChangeText={(value: string) => handleInputChange("dob", value)}
             placeholder="DD/MM/YYYY"
-            placeholderTextColor={theme.text + "80"}
+            placeholderTextColor={withOpacity(theme.text, 0.5)}
             theme={theme}
             returnKeyType="next"
             error={formErrors.dob}
@@ -401,7 +401,7 @@ function OrderPage() {
             value={formData.email}
             onChangeText={(value: string) => handleInputChange("email", value)}
             placeholder="Enter email"
-            placeholderTextColor={theme.text + "80"}
+            placeholderTextColor={withOpacity(theme.text, 0.5)}
             theme={theme}
             keyboardType="email-address"
             autoCapitalize="none"
@@ -412,14 +412,14 @@ function OrderPage() {
           />
 
           <Pressable
-            style={[styles.orderButton, { backgroundColor: theme.primary }]}
+            style={[appStyles.order.orderButton, { backgroundColor: theme.primary }]}
             onPress={handleSubmit}
             disabled={isSubmitting}
           >
             {isSubmitting ? (
               <ActivityIndicator color="#FFF" />
             ) : (
-              <Text style={styles.orderButtonText}>Sign Up</Text>
+              <Text style={appStyles.order.orderButtonText}>Sign Up</Text>
             )}
           </Pressable>
         </View>
@@ -427,94 +427,6 @@ function OrderPage() {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  orderContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  orderCard: {
-    backgroundColor: "transparent",
-    alignItems: "center",
-    maxWidth: 320,
-  },
-  iconContainer: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  orderTitle: {
-    fontSize: 28,
-    fontWeight: "800",
-    textAlign: "center",
-    marginBottom: 12,
-  },
-  orderSubtitle: {
-    fontSize: 16,
-    textAlign: "center",
-    marginBottom: 32,
-    lineHeight: 24,
-  },
-  orderButton: {
-    flexDirection: "row",
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  orderButtonText: {
-    color: "#FFF",
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 24,
-    gap: 12,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingTop: 40,
-    minHeight: "100%",
-    flexGrow: 1,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  formContainer: {
-    gap: 16,
-  },
-  inputGroup: {
-    gap: 8,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginLeft: 4,
-  },
-  input: {
-    padding: 14,
-    borderRadius: 12,
-    fontSize: 16,
-  },
-  errorText: {
-    fontSize: 12,
-    marginLeft: 4,
-    marginTop: 2,
-  },
-});
 
 // Export memoized component
 export default memo(OrderPage);

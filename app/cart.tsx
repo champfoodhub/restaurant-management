@@ -4,7 +4,6 @@ import React, { memo, useCallback, useMemo } from "react";
 import {
   FlatList,
   Pressable,
-  StyleSheet,
   Text,
   View,
   useColorScheme,
@@ -14,6 +13,7 @@ import { useSafeNavigation } from "../hooks/useSafeNavigation";
 import { addItem, clearCart, removeItem } from "../store/cartSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { toggleTheme } from "../store/themeSlice";
+import { appStyles } from "../styles";
 import { getTheme } from "../theme";
 import { Loggers } from "../utils/logger";
 
@@ -26,36 +26,23 @@ const CartItemComponent = memo(({ item, theme, onAdd, onRemove }: {
 }) => (
   <LinearGradient
     colors={theme.card}
-    style={styles.card}
+    style={appStyles.cart.card}
   >
     <View>
-      <Text style={[styles.name, { color: theme.text }]}>
+      <Text style={[appStyles.cart.name, { color: theme.text }]}>
         {item.name}
       </Text>
-      <Text style={[styles.price, { color: theme.accent }]}>
+      <Text style={[appStyles.cart.price, { color: theme.accent }]}>
         ₹{item.price} × {item.quantity}
       </Text>
     </View>
 
-    <View style={styles.controls}>
-      <Pressable
-        onPress={onRemove}
-        style={[styles.circle, { backgroundColor: theme.primary }]}
-      >
-        <Text style={styles.controlText}>−</Text>
-      </Pressable>
-
-      <Text style={[styles.qty, { color: theme.text }]}>
-        {item.quantity}
-      </Text>
-
-      <Pressable
-        onPress={onAdd}
-        style={[styles.circle, { backgroundColor: theme.primary }]}
-      >
-        <Text style={styles.controlText}>+</Text>
-      </Pressable>
-    </View>
+    <QuantityControl
+      quantity={item.quantity}
+      onIncrease={onAdd}
+      onDecrease={onRemove}
+      theme={theme}
+    />
   </LinearGradient>
 ));
 CartItemComponent.displayName = "CartItemComponent";
@@ -88,13 +75,10 @@ export default function CartPage() {
   const handleClearCart = useCallback(() => {
     dispatch(clearCart());
     Loggers.cart.info("Cart cleared");
+    // Navigate after a small delay to allow state to update
     const timer = setTimeout(() => {
       router.replace('/order-success');
     }, 100);
-    // Cleanup timer if component unmounts
-    return () => {
-      clearTimeout(timer);
-    };
   }, [dispatch]);
 
   const handleBrowseMenu = useCallback(() => {
@@ -109,23 +93,20 @@ export default function CartPage() {
     return (
       <View
         style={[
-          styles.emptyContainer,
+          appStyles.cart.emptyContainer,
           { backgroundColor: theme.background },
         ]}
       >
-        <Text style={[styles.emptyText, { color: theme.text }]}>
+        <Text style={[appStyles.cart.emptyText, { color: theme.text }]}>
           Your cart is empty
         </Text>
 
-        <Pressable
+        <ActionButton
+          title="Browse Menu"
           onPress={handleBrowseMenu}
-          style={[
-            styles.backBtn,
-            { backgroundColor: theme.primary },
-          ]}
-        >
-          <Text style={styles.backText}>Browse Menu</Text>
-        </Pressable>
+          variant="primary"
+          theme={theme}
+        />
 
         <Pressable
           onPress={handleToggleTheme}
@@ -140,7 +121,7 @@ export default function CartPage() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background }}>
+    <View style={[appStyles.cart.container, { backgroundColor: theme.background }]}>
       <FlatList
         data={items}
         keyExtractor={(item) => item.id}
@@ -158,11 +139,11 @@ export default function CartPage() {
       {/* CHECKOUT BAR */}
       <LinearGradient
         colors={[theme.primary, theme.accent]}
-        style={styles.checkoutBar}
+        style={appStyles.cart.checkoutBar}
       >
         <View>
-          <Text style={styles.totalLabel}>Total</Text>
-          <Text style={styles.totalAmount}>₹{total}</Text>
+          <Text style={appStyles.cart.totalLabel}>Total</Text>
+          <Text style={appStyles.cart.totalAmount}>₹{total}</Text>
         </View>
 
         <View style={{ alignItems: "flex-end" }}>
@@ -177,116 +158,11 @@ export default function CartPage() {
           <Pressable
             onPress={handleClearCart}
           >
-            <Text style={styles.checkoutText}>Checkout →</Text>
+            <Text style={appStyles.cart.checkoutText}>Checkout →</Text>
           </Pressable>
         </View>
       </LinearGradient>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 14,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    elevation: 6,
-  },
-
-  name: {
-    fontSize: 17,
-    fontWeight: "700",
-    marginBottom: 4,
-  },
-
-  price: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
-
-  controls: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-
-  circle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  controlText: {
-    color: "#FFF",
-    fontSize: 20,
-    fontWeight: "700",
-  },
-
-  qty: {
-    fontSize: 16,
-    fontWeight: "600",
-    minWidth: 20,
-    textAlign: "center",
-  },
-
-  checkoutBar: {
-    position: "absolute",
-    bottom: 16,
-    left: 16,
-    right: 16,
-    borderRadius: 20,
-    padding: 20,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    elevation: 20,
-  },
-
-  totalLabel: {
-    color: "#FFF",
-    fontSize: 14,
-    opacity: 0.85,
-  },
-
-  totalAmount: {
-    color: "#FFF",
-    fontSize: 22,
-    fontWeight: "800",
-  },
-
-  checkoutText: {
-    color: "#FFF",
-    fontSize: 18,
-    fontWeight: "800",
-  },
-
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  emptyText: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 20,
-  },
-
-  backBtn: {
-    paddingVertical: 14,
-    paddingHorizontal: 28,
-    borderRadius: 14,
-  },
-
-  backText: {
-    color: "#FFF",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-});
 

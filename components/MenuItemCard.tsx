@@ -2,17 +2,18 @@ import { LinearGradient } from "expo-linear-gradient";
 import React, { memo, useCallback, useMemo } from "react";
 import {
   Image,
-  Pressable,
   StyleSheet,
   Switch,
   Text,
-  View,
+  View
 } from "react-native";
+import { ActionButton, QuantityControl } from "../components/ui";
 import { hasPermission, isBranch, isHQ, isUser } from "../config/accessControl";
 import { MenuItem as ConfigMenuItem, SeasonalMenu } from "../config/config";
 import { addItem, removeItem } from "../store/cartSlice";
 import { useAppDispatch } from "../store/hooks";
 import { selectAllStockItems, toggleStockStatus } from "../store/stockSlice";
+import { withOpacity } from "../utils/colorUtils";
 
 // Stock toggle helper - defined outside component to prevent recreation
 const handleStockToggle = (
@@ -94,17 +95,11 @@ export const MenuItemCard = memo(function MenuItemCard({
   
   // Determine text color with opacity safely
   const textSecondaryColor = useMemo(() => {
-    if (theme.text && theme.text.startsWith('#')) {
-      return theme.text + "80";
-    }
-    return theme.text;
+    return withOpacity(theme.text, 0.5);
   }, [theme.text]);
   
   const textMutedColor = useMemo(() => {
-    if (theme.text && theme.text.startsWith('#')) {
-      return theme.text + "60";
-    }
-    return theme.text;
+    return withOpacity(theme.text, 0.35);
   }, [theme.text]);
 
   return (
@@ -141,40 +136,31 @@ export const MenuItemCard = memo(function MenuItemCard({
           {isUser() && isInStock && (
             <>
               {qty === 0 ? (
-                <Pressable
+                <ActionButton
+                  title="+ Add"
                   onPress={handleAddItem}
-                  style={[styles.addButton, { backgroundColor: theme.primary }]}
-                >
-                  <Text style={styles.addText}>+ Add</Text>
-                </Pressable>
+                  variant="primary"
+                  theme={theme}
+                />
               ) : (
-                <View style={styles.controls}>
-                  <Pressable
-                    onPress={handleRemoveItem}
-                    style={[styles.circle, { backgroundColor: theme.primary }]}
-                  >
-                    <Text style={styles.controlText}>−</Text>
-                  </Pressable>
-                  <Text style={[styles.qty, { color: theme.text }]}>{qty}</Text>
-                  <Pressable
-                    onPress={handleAddItem}
-                    style={[styles.circle, { backgroundColor: theme.primary }]}
-                  >
-                    <Text style={styles.controlText}>+</Text>
-                  </Pressable>
-                </View>
+                <QuantityControl
+                  quantity={qty}
+                  onIncrease={handleAddItem}
+                  onDecrease={handleRemoveItem}
+                  theme={theme}
+                />
               )}
             </>
           )}
 
           {/* Delete button for HQ */}
           {canManageMenu && onDelete && (
-            <Pressable
+            <ActionButton
+              title="Delete"
               onPress={handleDelete}
-              style={[styles.deleteButton, { backgroundColor: "#EF4444" }]}
-            >
-              <Text style={styles.deleteText}>Delete</Text>
-            </Pressable>
+              variant="danger"
+              theme={theme}
+            />
           )}
         </View>
 
@@ -268,49 +254,6 @@ const styles = StyleSheet.create({
   basePrice: {
     fontSize: 12,
     textDecorationLine: "line-through",
-  },
-  addButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-  },
-  addText: {
-    color: "#FFF",
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  controls: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  circle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  controlText: {
-    color: "#FFF",
-    fontSize: 20,
-    fontWeight: "700",
-  },
-  qty: {
-    fontSize: 16,
-    fontWeight: "600",
-    minWidth: 20,
-    textAlign: "center",
-  },
-  deleteButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  deleteText: {
-    color: "#FFF",
-    fontWeight: "600",
-    fontSize: 12,
   },
   seasonalBadge: {
     paddingHorizontal: 8,

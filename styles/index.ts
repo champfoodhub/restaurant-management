@@ -229,36 +229,59 @@ export const sharedStyles = StyleSheet.create({
 // COMPONENT STYLES - Component-specific styles
 // =============================================================================
 
-export const componentStyles = StyleSheet.create({
-  // --- ThemedText ---
-  themedText: {
-    default: {
+// Using type assertion to allow nested style objects that TypeScript
+// would normally reject for StyleSheet.create()
+const componentStylesRaw = {
+  // --- MenuCard ---
+  menuCard: {
+    container: {
+      borderWidth: 1,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 12,
+    },
+    content: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 12,
+    },
+    pressable: {
+      padding: 8,
+      borderRadius: 8,
+    },
+    quantity: {
+      marginHorizontal: 16,
       fontSize: 16,
-      lineHeight: 24,
-    },
-    defaultSemiBold: {
-      fontSize: 16,
-      lineHeight: 24,
-      fontWeight: '600',
-    },
-    title: {
-      fontSize: 32,
-      fontWeight: 'bold',
-      lineHeight: 32,
-    },
-    subtitle: {
-      fontSize: 20,
-      fontWeight: 'bold',
-    },
-    link: {
-      lineHeight: 30,
-      fontSize: 16,
-      color: '#0a7ea4',
     },
   },
 
   // --- MenuItemCard ---
   menuItemCard: {
+    card: {
+      borderRadius: 12,
+      padding: 12,
+      marginBottom: 16,
+      flexDirection: "row",
+      elevation: 2,
+    },
+    stockControlsContainer: {
+      position: "absolute",
+      bottom: 10,
+      right: 10,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    stockIndicator: {
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 6,
+    },
+    stockText: {
+      color: "#FFF",
+      fontSize: 10,
+      fontWeight: "600",
+    },
     itemImage: {
       width: 90,
       height: 90,
@@ -284,13 +307,9 @@ export const componentStyles = StyleSheet.create({
       fontSize: 13,
       marginBottom: 12,
     },
-    stockControlsContainer: {
-      position: "absolute",
-      bottom: 10,
-      right: 10,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
+    itemPrice: {
+      fontSize: 18,
+      fontWeight: "700",
     },
     seasonalBadge: {
       paddingHorizontal: 8,
@@ -314,7 +333,17 @@ export const componentStyles = StyleSheet.create({
       paddingHorizontal: 16,
       gap: 8,
     },
-    categoryChip: {
+  },
+
+  // --- CategoryChip ---
+  categoryChip: {
+    container: {
+      flexDirection: "row",
+      paddingHorizontal: 16,
+      gap: 8,
+      marginBottom: 8,
+    },
+    chip: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
@@ -324,10 +353,10 @@ export const componentStyles = StyleSheet.create({
       marginRight: 8,
       gap: 4,
     },
-    categoryIcon: {
+    icon: {
       marginBottom: -1,
     },
-    categoryText: {
+    text: {
       fontWeight: "600",
       fontSize: 12,
     },
@@ -335,6 +364,10 @@ export const componentStyles = StyleSheet.create({
 
   // --- ProfileModal ---
   profileModal: {
+    modalOverlay: {
+      flex: 1,
+      justifyContent: "flex-end",
+    },
     modalBackdrop: {
       position: "absolute",
       top: 0,
@@ -348,6 +381,13 @@ export const componentStyles = StyleSheet.create({
       borderTopRightRadius: 24,
       paddingBottom: 34,
       maxHeight: "85%",
+    },
+    loadingContainer: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 200,
+      paddingVertical: 40,
     },
     loadingText: {
       fontSize: 16,
@@ -366,9 +406,6 @@ export const componentStyles = StyleSheet.create({
     modalTitle: {
       fontSize: 20,
       fontWeight: "700",
-    },
-    closeButton: {
-      padding: 4,
     },
     profileHeader: {
       alignItems: "center",
@@ -425,9 +462,6 @@ export const componentStyles = StyleSheet.create({
     fieldsContainer: {
       paddingHorizontal: 20,
       paddingTop: 8,
-    },
-    fieldRow: {
-      flexDirection: "row",
     },
     fieldWrapper: {
       flex: 1,
@@ -506,44 +540,6 @@ export const componentStyles = StyleSheet.create({
     },
   },
 
-  // --- AddMenuItemModal ---
-  addMenuItemModal: {
-    modalContent: {
-      width: "90%",
-      borderRadius: 16,
-      padding: 20,
-      elevation: 8,
-    },
-    modalTitle: {
-      fontSize: 20,
-      fontWeight: "700",
-      marginBottom: 16,
-    },
-    input: {
-      borderWidth: 1,
-      borderRadius: 8,
-      padding: 12,
-      fontSize: 16,
-      marginBottom: 8,
-    },
-    modalButtons: {
-      flexDirection: "row",
-      justifyContent: "flex-end",
-      gap: 12,
-      marginTop: 16,
-    },
-    modalButton: {
-      paddingVertical: 12,
-      paddingHorizontal: 20,
-      borderRadius: 8,
-    },
-    modalButtonText: {
-      color: "#FFF",
-      fontWeight: "600",
-      fontSize: 16,
-    },
-  },
-
   // --- SeasonalMenuModal ---
   seasonalMenuModal: {
     modalOverlay: {
@@ -582,16 +578,6 @@ export const componentStyles = StyleSheet.create({
       justifyContent: "flex-end",
       gap: 12,
       marginTop: 16,
-    },
-    modalButton: {
-      paddingVertical: 12,
-      paddingHorizontal: 20,
-      borderRadius: 8,
-    },
-    modalButtonText: {
-      color: "#FFF",
-      fontWeight: "600",
-      fontSize: 16,
     },
     seasonalMenuItem: {
       flexDirection: "row",
@@ -646,16 +632,6 @@ export const componentStyles = StyleSheet.create({
       fontWeight: "600",
       fontSize: 12,
     },
-    deleteButton: {
-      paddingVertical: 6,
-      paddingHorizontal: 12,
-      borderRadius: 8,
-    },
-    deleteText: {
-      color: "#FFF",
-      fontWeight: "600",
-      fontSize: 12,
-    },
   },
 
   // --- SpecialMenuModal ---
@@ -694,15 +670,55 @@ export const componentStyles = StyleSheet.create({
       gap: 12,
       marginTop: 16,
     },
-    modalButton: {
+  },
+
+  // --- ActionButton ---
+  actionButton: {
+    button: {
       paddingVertical: 12,
       paddingHorizontal: 20,
       borderRadius: 8,
+      alignItems: "center",
+      justifyContent: "center",
+      flexDirection: "row",
+      gap: 8,
     },
-    modalButtonText: {
-      color: "#FFF",
+    text: {
       fontWeight: "600",
       fontSize: 16,
+    },
+    disabled: {
+      opacity: 0.6,
+    },
+    modalButtons: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      gap: 12,
+      marginTop: 16,
+    },
+  },
+
+  // --- QuantityControl ---
+  quantityControl: {
+    controls: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+    },
+    circle: {
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    controlText: {
+      color: "#FFF",
+      fontWeight: "700",
+    },
+    qty: {
+      fontWeight: "600",
+      textAlign: "center",
+    },
+    disabled: {
+      opacity: 0.5,
     },
   },
 
@@ -782,49 +798,26 @@ export const componentStyles = StyleSheet.create({
       fontWeight: "600",
     },
   },
+};
 
-  // --- ParallaxScrollView ---
-  parallaxScrollView: {
-    container: {
-      flex: 1,
-    },
-    header: {
-      height: 250,
-      overflow: 'hidden',
-    },
-    content: {
-      flex: 1,
-      padding: 32,
-      gap: 16,
-      overflow: 'hidden',
-    },
-  },
-
-  // --- Collapsible ---
-  collapsible: {
-    heading: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-    },
-    content: {
-      marginTop: 6,
-      marginLeft: 24,
-    },
-  },
-});
+// Export componentStyles with proper typing
+export const componentStyles = StyleSheet.create(componentStylesRaw as any);
 
 // =============================================================================
 // APP STYLES - Page-specific styles
 // =============================================================================
 
-export const appStyles = StyleSheet.create({
+const appStylesRaw = {
   // --- Home (index) ---
   home: {
     container: {
       flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
+    },
+    themeToggle: {
+      marginTop: 12,
+    },
+    themeToggleText: {
+      opacity: 0.7,
     },
     hero: {
       height: "100%",
@@ -879,6 +872,9 @@ export const appStyles = StyleSheet.create({
 
   // --- Menu ---
   menu: {
+    container: {
+      flex: 1,
+    },
     header: {
       paddingVertical: 16,
       marginBottom: 8,
@@ -962,38 +958,6 @@ export const appStyles = StyleSheet.create({
       fontWeight: "700",
       fontSize: 16,
     },
-    inputLabel: {
-      fontSize: 14,
-      fontWeight: "600",
-      marginBottom: 8,
-      marginTop: 8,
-    },
-    seasonalMenuItem: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      borderWidth: 1,
-      borderRadius: 12,
-      padding: 12,
-      marginBottom: 8,
-    },
-    seasonalMenuName: {
-      fontSize: 16,
-      fontWeight: "600",
-    },
-    seasonalMenuDate: {
-      fontSize: 12,
-      marginTop: 4,
-    },
-    seasonalMenuTime: {
-      fontSize: 12,
-      marginTop: 2,
-    },
-    seasonalMenuActions: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-    },
     itemsListContainer: {
       maxHeight: 400,
       marginVertical: 12,
@@ -1031,6 +995,9 @@ export const appStyles = StyleSheet.create({
 
   // --- Cart ---
   cart: {
+    container: {
+      flex: 1,
+    },
     card: {
       borderRadius: 18,
       padding: 18,
@@ -1048,24 +1015,6 @@ export const appStyles = StyleSheet.create({
     price: {
       fontSize: 15,
       fontWeight: "600",
-    },
-    circle: {
-      width: 34,
-      height: 34,
-      borderRadius: 17,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    controlText: {
-      color: "#FFF",
-      fontSize: 20,
-      fontWeight: "700",
-    },
-    qty: {
-      fontSize: 16,
-      fontWeight: "600",
-      minWidth: 20,
-      textAlign: "center",
     },
     checkoutBar: {
       position: "absolute",
@@ -1103,16 +1052,6 @@ export const appStyles = StyleSheet.create({
       fontSize: 20,
       fontWeight: "700",
       marginBottom: 20,
-    },
-    backBtn: {
-      paddingVertical: 14,
-      paddingHorizontal: 28,
-      borderRadius: 14,
-    },
-    backText: {
-      color: "#FFF",
-      fontSize: 16,
-      fontWeight: "700",
     },
   },
 
@@ -1207,6 +1146,9 @@ export const appStyles = StyleSheet.create({
 
   // --- Order Success ---
   orderSuccess: {
+    container: {
+      flex: 1,
+    },
     successContainer: {
       flex: 1,
       justifyContent: "center",
@@ -1294,14 +1236,6 @@ export const appStyles = StyleSheet.create({
       fontSize: 18,
       fontWeight: "700",
     },
-    homeButton: {
-      paddingVertical: 14,
-      alignItems: "center",
-    },
-    homeButtonText: {
-      fontSize: 16,
-      fontWeight: "600",
-    },
   },
 
   // --- Layout ---
@@ -1317,7 +1251,10 @@ export const appStyles = StyleSheet.create({
       alignItems: "center",
     },
   },
-});
+};
+
+// Export appStyles with proper typing
+export const appStyles = StyleSheet.create(appStylesRaw as any);
 
 // =============================================================================
 // DEFAULT EXPORT - For easy importing
@@ -1328,3 +1265,4 @@ export default {
   ...componentStyles,
   ...appStyles,
 };
+

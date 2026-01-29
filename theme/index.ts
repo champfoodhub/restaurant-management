@@ -1,12 +1,15 @@
 import { Flavor } from "../config/config";
 
+// Import from colors and content modules
+import { getTheme, Theme, themeColors } from "./colors";
+import { flavorContent, getFlavorContent } from "./content";
+
 // Re-export colors and content
 export * from "./colors";
 export * from "./content";
 
 // Re-export helper functions from their modules (using proper syntax)
-export { getTheme, Theme, themeColors } from "./colors";
-export { flavorContent, getFlavorContent } from "./content";
+export { flavorContent, getFlavorContent, getTheme, Theme, themeColors };
 
 // Helper to get the full theme object (colors + content)
 export function getFullTheme(flavor: Flavor, mode: "light" | "dark") {

@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { Pressable, StyleSheet, useColorScheme, View } from "react-native";
+import { Pressable, useColorScheme, View } from "react-native";
 import { Provider as ReduxProvider } from "react-redux";
 
 import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
@@ -14,6 +14,7 @@ import { store } from "../store";
 import { clearUserFromStorage, loadUserFromStorage, logout } from "../store/authSlice";
 import { loadFlavorFromStorage } from "../store/flavorSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { appStyles } from "../styles";
 import { getTheme } from "../theme";
 import { showError } from "../utils/alertUtils";
 import { AuthMessages } from "../utils/errorMessages";
@@ -41,11 +42,11 @@ const ProfileIcon = memo(function ProfileIcon({
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
-        styles.profileIconContainer,
+        appStyles.layout.profileIconContainer,
         pressed && { opacity: 0.7 }
       ]}
     >
-      <View style={[styles.profileIcon, { backgroundColor: theme.primary }]}>
+      <View style={[appStyles.layout.profileIcon, { backgroundColor: theme.primary }]}>
         <Ionicons name="person" size={20} color="#FFF" />
       </View>
     </Pressable>
@@ -169,19 +170,6 @@ function NavigationWrapper() {
     </ThemeProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  profileIconContainer: {
-    padding: 4,
-  },
-  profileIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-});
 
 export default function RootLayout() {
   return (

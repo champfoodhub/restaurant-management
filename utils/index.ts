@@ -20,8 +20,30 @@ export {
 // Validation Utilities
 export {
     createDebouncedValidator, FieldValidation, formatPhoneNumber, getInputValidationState, isEmpty, sanitizeInput, sanitizeObject, validateCartForCheckout, validateCustom,
-    validateDOB, validateEmail, validateField, validateForm, validateMaxLength,
+    validateDOB, validateEmail, validateField, validateMaxLength,
     validateMinLength, validateOrderForm, validatePattern, validatePhone,
-    validateProfileForm, validateRequired, ValidationResult, ValidationRule
+    validateProfileForm, validateRequired, ValidationResult
 } from "./validation";
+
+// Color Utilities
+export {
+    blendColors, darkenColor,
+    getContrastColor, hexToRgba,
+    lightenColor, parseColor, transparentize, withOpacity
+} from "./colorUtils";
+
+// Memoization Utilities
+export {
+    checkDepsChange, createMemoizedSelector, LRUCache,
+    memoize, memoizedCompute, shallowCompareArrays,
+    shallowCompareObjects, useStable
+} from "./memoize";
+
+// Style Utilities
+export {
+    combineSpacing, composeStyles, conditionalStyle, createShadowStyle, createThemeStyle, flatten, flattenStyles, getStyleValue,
+    hasStyleProperty, mergeStyles, platformSpecific, responsiveSize,
+    StyleSheet, useFlattenedStyle,
+    useStyles
+} from "./styleUtils";
 

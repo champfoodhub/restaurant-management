@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
   Modal,
-  Pressable,
   StyleSheet,
   Switch,
   Text,
@@ -9,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { SeasonalMenu } from "../config/config";
+import { withOpacity } from "../utils/colorUtils";
 
 interface SeasonalMenuModalProps {
   visible: boolean;
@@ -69,14 +69,14 @@ export function SeasonalMenuModal({
           <TextInput
             style={[styles.input, { borderColor: theme.border, color: theme.text }]}
             placeholder="Seasonal Menu Name"
-            placeholderTextColor={theme.text + "80"}
+            placeholderTextColor={withOpacity(theme.text, 0.5)}
             value={name}
             onChangeText={setName}
           />
           <TextInput
             style={[styles.input, { borderColor: theme.border, color: theme.text }]}
             placeholder="Description"
-            placeholderTextColor={theme.text + "80"}
+            placeholderTextColor={withOpacity(theme.text, 0.5)}
             value={description}
             onChangeText={setDescription}
             multiline
@@ -87,7 +87,7 @@ export function SeasonalMenuModal({
           <TextInput
             style={[styles.input, { borderColor: theme.border, color: theme.text }]}
             placeholder="2024-12-01"
-            placeholderTextColor={theme.text + "80"}
+            placeholderTextColor={withOpacity(theme.text, 0.5)}
             value={startDate}
             onChangeText={setStartDate}
           />
@@ -97,7 +97,7 @@ export function SeasonalMenuModal({
           <TextInput
             style={[styles.input, { borderColor: theme.border, color: theme.text }]}
             placeholder="2024-12-31"
-            placeholderTextColor={theme.text + "80"}
+            placeholderTextColor={withOpacity(theme.text, 0.5)}
             value={endDate}
             onChangeText={setEndDate}
           />
@@ -107,7 +107,7 @@ export function SeasonalMenuModal({
           <TextInput
             style={[styles.input, { borderColor: theme.border, color: theme.text }]}
             placeholder="12:00"
-            placeholderTextColor={theme.text + "80"}
+            placeholderTextColor={withOpacity(theme.text, 0.5)}
             value={startTime}
             onChangeText={setStartTime}
           />
@@ -117,26 +117,18 @@ export function SeasonalMenuModal({
           <TextInput
             style={[styles.input, { borderColor: theme.border, color: theme.text }]}
             placeholder="23:59"
-            placeholderTextColor={theme.text + "80"}
+            placeholderTextColor={withOpacity(theme.text, 0.5)}
             value={endTime}
             onChangeText={setEndTime}
           />
 
           <View style={styles.modalButtons}>
-            <Pressable
-              onPress={onClose}
-              style={[styles.modalButton, { backgroundColor: theme.muted }]}
-            >
-              <Text style={[styles.modalButtonText, { color: theme.text }]}>
-                Cancel
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={handleCreate}
-              style={[styles.modalButton, { backgroundColor: theme.primary }]}
-            >
-              <Text style={styles.modalButtonText}>Create Menu</Text>
-            </Pressable>
+            <ModalButtons
+              onCancel={onClose}
+              onConfirm={handleCreate}
+              confirmLabel="Create Menu"
+              theme={theme}
+            />
           </View>
         </View>
       </View>
@@ -169,7 +161,7 @@ export function SeasonalMenuListModal({
           </Text>
 
           {seasonalMenus.length === 0 ? (
-            <Text style={[styles.emptyText, { color: theme.text + "80" }]}>
+            <Text style={[styles.emptyText, { color: withOpacity(theme.text, 0.5) }]}>
               No seasonal menus created yet
             </Text>
           ) : (
@@ -188,7 +180,7 @@ export function SeasonalMenuListModal({
                   <Text
                     style={[
                       styles.seasonalMenuDate,
-                      { color: theme.text + "80" },
+                      { color: withOpacity(theme.text, 0.5) },
                     ]}
                   >
                     {menu.startDate} - {menu.endDate}
@@ -196,7 +188,7 @@ export function SeasonalMenuListModal({
                   <Text
                     style={[
                       styles.seasonalMenuTime,
-                      { color: theme.text + "80" },
+                      { color: withOpacity(theme.text, 0.5) },
                     ]}
                   >
                     {formatTimeRange(menu.startTime, menu.endTime)}
@@ -209,49 +201,37 @@ export function SeasonalMenuListModal({
                     trackColor={{ false: "#767577", true: theme.primary }}
                     thumbColor="#FFFFFF"
                   />
-                  <Pressable
+                  <ActionButton
+                    title="+ Items"
                     onPress={() => onAddItems(menu)}
-                    style={[
-                      styles.addItemButton,
-                      { backgroundColor: theme.accent },
-                    ]}
-                  >
-                    <Text style={styles.addItemButtonText}>+ Items</Text>
-                  </Pressable>
-                  <Pressable
+                    variant="accent"
+                    theme={theme}
+                  />
+                  <ActionButton
+                    title="Delete"
                     onPress={() => onDelete(menu.id)}
-                    style={[styles.deleteButton, { backgroundColor: "#EF4444" }]}
-                  >
-                    <Text style={styles.deleteText}>Delete</Text>
-                  </Pressable>
+                    variant="danger"
+                    theme={theme}
+                  />
                 </View>
               </View>
             ))
           )}
 
-          <Pressable
+          <ActionButton
+            title="+ Create New Seasonal Menu"
             onPress={onCreateNew}
-            style={[
-              styles.addSeasonalButton,
-              { backgroundColor: theme.primary },
-            ]}
-          >
-            <Text style={styles.addSeasonalButtonText}>
-              + Create New Seasonal Menu
-            </Text>
-          </Pressable>
+            variant="primary"
+            theme={theme}
+          />
 
-          <Pressable
+          <ActionButton
+            title="Close"
             onPress={onClose}
-            style={[
-              styles.modalButton,
-              { backgroundColor: theme.muted, marginTop: 16 },
-            ]}
-          >
-            <Text style={[styles.modalButtonText, { color: theme.text }]}>
-              Close
-            </Text>
-          </Pressable>
+            variant="muted"
+            theme={theme}
+            style={{ marginTop: 16 }}
+          />
         </View>
       </View>
     </Modal>
@@ -296,16 +276,6 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 16,
   },
-  modalButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-  },
-  modalButtonText: {
-    color: "#FFF",
-    fontWeight: "600",
-    fontSize: 16,
-  },
   seasonalMenuItem: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -332,42 +302,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  addSeasonalButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    marginTop: 16,
-  },
-  addSeasonalButtonText: {
-    color: "#FFF",
-    fontWeight: "600",
-    fontSize: 16,
-    textAlign: "center",
-  },
   emptyText: {
     fontSize: 16,
     textAlign: "center",
     marginVertical: 20,
-  },
-  addItemButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  addItemButtonText: {
-    color: "#FFF",
-    fontWeight: "600",
-    fontSize: 12,
-  },
-  deleteButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  deleteText: {
-    color: "#FFF",
-    fontWeight: "600",
-    fontSize: 12,
   },
 });
 

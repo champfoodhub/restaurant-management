@@ -3,7 +3,14 @@
  * Validation functions for specific form types
  */
 
-import { ValidationResult } from "./coreValidations";
+import {
+  ValidationResult,
+  validateDOB,
+  validateEmail,
+  validateMinLength,
+  validatePhone,
+  validateRequired
+} from "./coreValidations";
 
 // ============================================================================
 // Order Form Validation
@@ -22,15 +29,6 @@ export interface OrderFormData {
  * Validate order form data
  */
 export function validateOrderForm(formData: OrderFormData): ValidationResult {
-  // Import here to avoid circular dependency
-  const {
-    validateRequired,
-    validatePhone,
-    validateMinLength,
-    validateEmail,
-    validateDOB,
-  } = require("./coreValidations");
-
   // First name validation
   const firstNameResult = validateRequired(formData.firstName.trim(), 'First name');
   if (!firstNameResult.isValid) return firstNameResult;
@@ -79,13 +77,6 @@ export interface ProfileFormData {
  * Validate profile form data
  */
 export function validateProfileForm(formData: ProfileFormData): ValidationResult {
-  // Import here to avoid circular dependency
-  const {
-    validateRequired,
-    validatePhone,
-    validateEmail,
-  } = require("./coreValidations");
-
   // First name validation
   const firstNameResult = validateRequired(formData.firstName.trim(), 'First name');
   if (!firstNameResult.isValid) return firstNameResult;
@@ -172,33 +163,30 @@ export function validateField(
   label: string,
   rules: FieldValidation['validations']
 ): ValidationResult {
-  // Import here to avoid circular dependency
-  const core = require("./coreValidations");
-
   for (const rule of rules) {
     let result: ValidationResult;
 
     switch (rule.type) {
       case 'required':
-        result = core.validateRequired(value, label);
+        result = validateRequired(value, label);
         break;
       case 'email':
-        result = core.validateEmail(value, label);
+        result = validateEmail(value, label);
         break;
       case 'phone':
-        result = core.validatePhone(value, label, rule.minLength || 10);
+        result = validatePhone(value, label, rule.minLength || 10);
         break;
       case 'minLength':
-        result = core.validateMinLength(value, label, rule.minLength || 0);
+        result = validateMinLength(value, label, rule.minLength || 0);
         break;
       case 'maxLength':
-        result = core.validateMaxLength(value, label, rule.maxLength || 100);
+        result = validateMaxLength(value, label, rule.maxLength || 100);
         break;
       case 'pattern':
-        result = core.validatePattern(value, label, rule.pattern!, rule.message);
+        result = validatePattern(value, label, rule.pattern!, rule.message);
         break;
       case 'custom':
-        result = core.validateCustom(value, rule.customValidator!, rule.message || 'Invalid value');
+        result = validateCustom(value, rule.customValidator!, rule.message || 'Invalid value');
         break;
       default:
         continue;
@@ -212,6 +200,9 @@ export function validateField(
   return { isValid: true };
 }
 
+// Import additional validators needed for validateField
+import { validateCustom, validateMaxLength, validatePattern } from "./coreValidations";
+
 // ============================================================================
 // Export
 // ============================================================================
@@ -222,7 +213,4 @@ export default {
   validateCartForCheckout,
   validateField,
 };
-
-// Type exports
-export type { CartItemData, FieldValidation, OrderFormData, ProfileFormData };
 

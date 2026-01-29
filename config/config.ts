@@ -139,3 +139,63 @@ export interface MenuSchedule {
   isActive: boolean;
 }
 
+// =============================================================================
+// TOKEN TYPES - Re-exported from types/token.ts for convenience
+// =============================================================================
+
+// Token type enumeration
+export enum TokenType {
+  ACCESS = "access",
+  REFRESH = "refresh",
+  API = "api",
+  ID = "id",
+}
+
+// Token status enumeration
+export enum TokenStatus {
+  ACTIVE = "active",
+  EXPIRED = "expired",
+  REVOKED = "revoked",
+  INVALID = "invalid",
+}
+
+// Authentication token interface with metadata
+export interface AuthToken {
+  /** The token value */
+  token: string;
+  /** Type of token */
+  type: TokenType;
+  /** Token status */
+  status: TokenStatus;
+  /** Token creation timestamp */
+  issuedAt: number;
+  /** Token expiration timestamp */
+  expiresAt: number;
+  /** Optional: refresh token associated with this access token */
+  refreshToken?: string;
+  /** Optional: token scope/permissions */
+  scope?: string[];
+}
+
+// Token validation result
+export interface TokenValidationResult {
+  /** Whether the token is valid */
+  isValid: boolean;
+  /** Current status of the token */
+  status: TokenStatus;
+  /** Error message if invalid */
+  error?: string;
+  /** Time until expiration in seconds */
+  expiresIn?: number;
+}
+
+// Token expiration thresholds
+export const TOKEN_EXPIRATION_THRESHOLDS = {
+  /** Warn when token expires within this many seconds */
+  WARN_BEFORE_SECONDS: 300, // 5 minutes
+  /** Refresh token if access token expires within this many seconds */
+  REFRESH_BEFORE_SECONDS: 600, // 10 minutes
+  /** Maximum token age before forcing refresh */
+  MAX_TOKEN_AGE_SECONDS: 3600, // 1 hour
+};
+

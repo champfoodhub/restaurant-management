@@ -2,15 +2,27 @@
  * Color Utility Functions
  * Provides safe color manipulation for React Native
  * Fixes issues with hex color + opacity string combinations
+ * All functions include memoization for performance
  */
 
+// Cache for memoized color functions
+const hexToRgbaCache = new Map<string, string>();
+const lightenColorCache = new Map<string, string>();
+const darkenColorCache = new Map<string, string>();
+const blendColorsCache = new Map<string, string>();
+const withOpacityCache = new Map<string, string>();
+const MAX_CACHE_SIZE = 100;
+
 /**
- * Add alpha/opacity to a hex color
+ * Add alpha/opacity to a hex color (memoized)
  * @param hex - Hex color string (e.g., "#FFFFFF" or "#FFF")
  * @param opacity - Opacity value from 0 to 100
  * @returns RGBA color string
  */
 export function hexToRgba(hex: string, opacity: number): string {
+  const cacheKey = `${hex}_${opacity}`;
+  const cached = hexToRgbaCache.get(cacheKey);
+  if (cached) return cached;
   // Remove # if present
   const cleanHex = hex.replace('#', '');
   
@@ -35,16 +47,29 @@ export function hexToRgba(hex: string, opacity: number): string {
   // Normalize opacity to 0-1 range
   const normalizedOpacity = Math.max(0, Math.min(100, opacity)) / 100;
   
-  return `rgba(${r}, ${g}, ${b}, ${normalizedOpacity})`;
+  const result = `rgba(${r}, ${g}, ${b}, ${normalizedOpacity})`;
+  
+  // Limit cache size
+  if (hexToRgbaCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = hexToRgbaCache.keys().next().value;
+    hexToRgbaCache.delete(firstKey);
+  }
+  hexToRgbaCache.set(cacheKey, result);
+  
+  return result;
 }
 
 /**
- * Lighten a color
+ * Lighten a color (memoized)
  * @param hex - Hex color string
  * @param percent - Percentage to lighten (0-100)
  * @returns Lightened hex color
  */
 export function lightenColor(hex: string, percent: number): string {
+  const cacheKey = `${hex}_${percent}`;
+  const cached = lightenColorCache.get(cacheKey);
+  if (cached) return cached;
+  
   const cleanHex = hex.replace('#', '');
   const num = parseInt(cleanHex, 16);
   
@@ -56,16 +81,29 @@ export function lightenColor(hex: string, percent: number): string {
   g = Math.min(255, g);
   b = Math.min(255, b);
   
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+  const result = `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+  
+  // Limit cache size
+  if (lightenColorCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = lightenColorCache.keys().next().value;
+    lightenColorCache.delete(firstKey);
+  }
+  lightenColorCache.set(cacheKey, result);
+  
+  return result;
 }
 
 /**
- * Darken a color
+ * Darken a color (memoized)
  * @param hex - Hex color string
  * @param percent - Percentage to darken (0-100)
  * @returns Darkened hex color
  */
 export function darkenColor(hex: string, percent: number): string {
+  const cacheKey = `${hex}_${percent}`;
+  const cached = darkenColorCache.get(cacheKey);
+  if (cached) return cached;
+  
   const cleanHex = hex.replace('#', '');
   const num = parseInt(cleanHex, 16);
   
@@ -77,7 +115,16 @@ export function darkenColor(hex: string, percent: number): string {
   g = Math.max(0, g);
   b = Math.max(0, b);
   
-  return `#${((Math.round(r) << 16) | (Math.round(g) << 8) | Math.round(b)).toString(16).padStart(6, '0')}`;
+  const result = `#${((Math.round(r) << 16) | (Math.round(g) << 8) | Math.round(b)).toString(16).padStart(6, '0')}`;
+  
+  // Limit cache size
+  if (darkenColorCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = darkenColorCache.keys().next().value;
+    darkenColorCache.delete(firstKey);
+  }
+  darkenColorCache.set(cacheKey, result);
+  
+  return result;
 }
 
 /**
@@ -108,13 +155,17 @@ export function transparentize(hex: string, opacity: number): string {
 }
 
 /**
- * Blend two colors together
+ * Blend two colors together (memoized)
  * @param color1 - First hex color
  * @param color2 - Second hex color
  * @param ratio - Blend ratio (0 = all color1, 1 = all color2)
  * @returns Blended hex color
  */
 export function blendColors(color1: string, color2: string, ratio: number): string {
+  const cacheKey = `${color1}_${color2}_${ratio}`;
+  const cached = blendColorsCache.get(cacheKey);
+  if (cached) return cached;
+  
   const cleanHex1 = color1.replace('#', '');
   const cleanHex2 = color2.replace('#', '');
   
@@ -130,7 +181,16 @@ export function blendColors(color1: string, color2: string, ratio: number): stri
   const g = Math.round(g1 * (1 - ratio) + g2 * ratio);
   const b = Math.round(b1 * (1 - ratio) + b2 * ratio);
   
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  const result = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  
+  // Limit cache size
+  if (blendColorsCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = blendColorsCache.keys().next().value;
+    blendColorsCache.delete(firstKey);
+  }
+  blendColorsCache.set(cacheKey, result);
+  
+  return result;
 }
 
 /**

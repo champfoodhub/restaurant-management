@@ -4,6 +4,7 @@
  */
 
 import { MenuItem, SeasonalMenu } from '../../config/config';
+import { memoize } from '../../utils/memoize';
 
 // State type
 export interface MenuState {
@@ -34,36 +35,61 @@ export const selectAllMenuItems = (state: { menu: MenuState }) => state.menu.ite
 
 /**
  * Get all categories (memoized with stable reference)
- * Fix: Use JSON stringify comparison instead of reference since Redux creates new array references
+ * Uses LRU cache for efficient memoization
  */
-let cachedCategories: string[] | null = null;
-let lastItemsJson: string | null = null;
+const selectCategoriesCache = new Map<string, string[]>();
 
 export const selectCategories = (state: { menu: MenuState }) => {
   const items = state.menu.items;
   
-  // Create a stable representation for comparison
-  const currentItemsJson = JSON.stringify(items.map(i => i.category).sort());
+  // Create a cache key based on item IDs
+  const cacheKey = items.map(i => i.id).join(',');
   
-  // Return cached categories if items haven't changed
-  if (cachedCategories !== null && lastItemsJson === currentItemsJson) {
-    return cachedCategories;
+  // Check cache first
+  const cached = selectCategoriesCache.get(cacheKey);
+  if (cached) {
+    return cached;
   }
   
-  // Compute and cache
-  const categories = new Set(items.map(item => item.category));
-  cachedCategories = Array.from(categories).sort();
-  lastItemsJson = currentItemsJson;
+  // Compute categories
+  const categories = Array.from(new Set(items.map(item => item.category))).sort();
   
-  return cachedCategories;
+  // Limit cache size to prevent memory leaks
+  if (selectCategoriesCache.size > 10) {
+    const firstKey = selectCategoriesCache.keys().next().value;
+    selectCategoriesCache.delete(firstKey);
+  }
+  
+  selectCategoriesCache.set(cacheKey, categories);
+  return categories;
 };
 
 /**
- * Get filtered items by category
+ * Get filtered items by category (memoized)
  */
+const selectItemsByCategoryCache = new Map<string, MenuItem[]>();
+
 export const selectItemsByCategory = (state: { menu: MenuState }, category: string | null) => {
   if (!category) return state.menu.items;
-  return state.menu.items.filter(item => item.category === category);
+  
+  // Create cache key
+  const cacheKey = `${category}_${state.menu.items.map(i => i.id).join(',')}`;
+  
+  const cached = selectItemsByCategoryCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+  
+  const filtered = state.menu.items.filter(item => item.category === category);
+  
+  // Limit cache size
+  if (selectItemsByCategoryCache.size > 10) {
+    const firstKey = selectItemsByCategoryCache.keys().next().value;
+    selectItemsByCategoryCache.delete(firstKey);
+  }
+  
+  selectItemsByCategoryCache.set(cacheKey, filtered);
+  return filtered;
 };
 
 /**
@@ -77,12 +103,32 @@ export const selectCurrentSeasonalMenu = (state: { menu: MenuState }) => state.m
 export const selectAllSeasonalMenus = (state: { menu: MenuState }) => state.menu.seasonalMenus;
 
 /**
- * Get items for current seasonal menu
+ * Get items for current seasonal menu (memoized)
  */
+const selectCurrentSeasonalMenuItemsCache = new Map<string, MenuItem[]>();
+
 export const selectCurrentSeasonalMenuItems = (state: { menu: MenuState }) => {
   const currentMenu = state.menu.currentSeasonalMenu;
   if (!currentMenu) return [];
-  return state.menu.items.filter(item => item.seasonalMenuId === currentMenu.id);
+  
+  // Create cache key
+  const cacheKey = `${currentMenu.id}_${state.menu.items.map(i => i.id).join(',')}`;
+  
+  const cached = selectCurrentSeasonalMenuItemsCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+  
+  const filtered = state.menu.items.filter(item => item.seasonalMenuId === currentMenu.id);
+  
+  // Limit cache size
+  if (selectCurrentSeasonalMenuItemsCache.size > 5) {
+    const firstKey = selectCurrentSeasonalMenuItemsCache.keys().next().value;
+    selectCurrentSeasonalMenuItemsCache.delete(firstKey);
+  }
+  
+  selectCurrentSeasonalMenuItemsCache.set(cacheKey, filtered);
+  return filtered;
 };
 
 /**
@@ -96,10 +142,14 @@ export const selectMenuLoading = (state: { menu: MenuState }) => state.menu.load
 export const selectMenuError = (state: { menu: MenuState }) => state.menu.error;
 
 /**
- * Get menu item by ID
+ * Get menu item by ID (memoized with id as part of selector)
  */
-export const selectMenuItemById = (id: string) => (state: { menu: MenuState }) =>
-  state.menu.items.find(item => item.id === id);
+export const createSelectMenuItemById = memoize((id: string) => 
+  (state: { menu: MenuState }) => state.menu.items.find(item => item.id === id)
+);
+
+// For backward compatibility
+export const selectMenuItemById = (id: string) => createSelectMenuItemById(id);
 
 /**
  * Get active seasonal menus

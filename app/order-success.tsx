@@ -5,7 +5,6 @@ import React, { memo, useEffect, useRef } from "react";
 import {
   Animated,
   Pressable,
-  StyleSheet,
   Text,
   useColorScheme,
   View,
@@ -14,6 +13,7 @@ import {
 import { useSafeNavigation } from "../hooks/useSafeNavigation";
 import { clearCart } from "../store/cartSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { appStyles } from "../styles";
 import { getTheme } from "../theme";
 import { Loggers } from "../utils/logger";
 
@@ -38,7 +38,8 @@ interface SuccessViewProps {
   theme: ReturnType<typeof getTheme>;
 }
 
-function SuccessView({ theme }: SuccessViewProps) {
+// Memoized SuccessView to prevent unnecessary re-renders
+const SuccessView = memo(function SuccessView({ theme }: SuccessViewProps) {
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const messageOpacity = useRef(new Animated.Value(0)).current;
@@ -93,17 +94,17 @@ function SuccessView({ theme }: SuccessViewProps) {
   }, []);
 
   return (
-    <View style={styles.successContainer}>
+    <View style={appStyles.orderSuccess.successContainer}>
       {/* Animated success icon */}
       <Animated.View
         style={[
-          styles.iconWrapper,
+          appStyles.orderSuccess.iconWrapper,
           { transform: [{ scale: scaleAnim }] },
         ]}
       >
         <LinearGradient
           colors={[successColor, successColorDark]}
-          style={styles.successIcon}
+          style={appStyles.orderSuccess.successIcon}
         >
           <Ionicons name="checkmark" size={60} color="#FFF" />
         </LinearGradient>
@@ -111,10 +112,10 @@ function SuccessView({ theme }: SuccessViewProps) {
 
       {/* Main text */}
       <Animated.View style={{ opacity: opacityAnim }}>
-        <Text style={[styles.successTitle, { color: successColor }]}>
+        <Text style={[appStyles.orderSuccess.successTitle, { color: successColor }]}>
           Order Placed Successfully!
         </Text>
-        <Text style={[styles.successSubtitle, { color: theme.text }]}>
+        <Text style={[appStyles.orderSuccess.successSubtitle, { color: theme.text }]}>
           🎉 Your delicious meal is being prepared with love!
         </Text>
       </Animated.View>
@@ -122,7 +123,7 @@ function SuccessView({ theme }: SuccessViewProps) {
       {/* Funny message */}
       <Animated.View
         style={[
-          styles.messageContainer,
+          appStyles.orderSuccess.messageContainer,
           {
             opacity: messageOpacity,
             backgroundColor: theme.muted,
@@ -130,18 +131,18 @@ function SuccessView({ theme }: SuccessViewProps) {
           },
         ]}
       >
-        <Text style={[styles.funnyMessage, { color: theme.text }]}>
+        <Text style={[appStyles.orderSuccess.funnyMessage, { color: theme.text }]}>
           {message}
         </Text>
       </Animated.View>
 
       {/* Confetti effect */}
-      <View style={styles.confettiContainer}>
+      <View style={appStyles.orderSuccess.confettiContainer}>
         {Array.from({ length: 10 }).map((_, i) => (
           <View
             key={i}
             style={[
-              styles.confetti,
+              appStyles.orderSuccess.confetti,
               {
                 left: `${5 + i * 9}%`,
                 backgroundColor: confettiColors[i % confettiColors.length],
@@ -152,7 +153,7 @@ function SuccessView({ theme }: SuccessViewProps) {
       </View>
     </View>
   );
-}
+});
 
 function OrderSuccessPage() {
   const { safePush } = useSafeNavigation(200);
@@ -175,137 +176,37 @@ function OrderSuccessPage() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background }}>
+    <View style={[appStyles.orderSuccess.container, { backgroundColor: theme.background }]}>
       <SuccessView theme={theme} />
 
       {/* Order Again Button */}
-      <View style={styles.buttonContainer}>
+      <View style={appStyles.orderSuccess.buttonContainer}>
         <LinearGradient
           colors={[theme.primary, theme.accent]}
-          style={styles.orderButton}
+          style={appStyles.orderSuccess.orderButton}
         >
           <Pressable
             onPress={handleOrderAgain}
-            style={styles.pressable}
+            style={appStyles.orderSuccess.pressable}
           >
             <Ionicons name="restaurant" size={22} color="#FFF" style={{ marginRight: 8 }} />
-            <Text style={styles.orderButtonText}>Order More Food</Text>
+            <Text style={appStyles.orderSuccess.orderButtonText}>Order More Food</Text>
           </Pressable>
         </LinearGradient>
 
-        <Pressable
+        <ActionButton
+          title="Go to Home"
           onPress={() => {
             dispatch(clearCart());
             router.replace("/");
           }}
-          style={styles.homeButton}
-        >
-          <Text style={[styles.homeButtonText, { color: theme.text }]}>
-            Go to Home
-          </Text>
-        </Pressable>
+          variant="muted"
+          theme={theme}
+        />
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  successContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 32,
-  },
-  iconWrapper: {
-    marginBottom: 32,
-  },
-  successIcon: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 20,
-  },
-  successTitle: {
-    fontSize: 28,
-    fontWeight: "800",
-    textAlign: "center",
-    marginBottom: 12,
-  },
-  successSubtitle: {
-    fontSize: 16,
-    textAlign: "center",
-    opacity: 0.8,
-    marginBottom: 24,
-    lineHeight: 24,
-  },
-  messageContainer: {
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-    borderWidth: 1,
-  },
-  funnyMessage: {
-    fontSize: 15,
-    textAlign: "center",
-    lineHeight: 24,
-    fontStyle: "italic",
-  },
-  confettiContainer: {
-    position: "absolute",
-    top: 100,
-    left: 0,
-    right: 0,
-    height: 200,
-    overflow: "hidden",
-  },
-  confetti: {
-    position: "absolute",
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    top: -20,
-  },
-  buttonContainer: {
-    paddingHorizontal: 24,
-    paddingBottom: 48,
-    gap: 16,
-  },
-  orderButton: {
-    borderRadius: 16,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 10,
-  },
-  pressable: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 18,
-    paddingHorizontal: 24,
-  },
-  orderButtonText: {
-    color: "#FFF",
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  homeButton: {
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  homeButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});
 
 export default memo(OrderSuccessPage);
 

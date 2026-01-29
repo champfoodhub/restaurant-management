@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Modal, StyleSheet, Text, TextInput, View } from "react-native";
 import { MenuItem } from "../config/config";
+import { withOpacity } from "../utils/colorUtils";
+import { ModalButtons } from "./ui";
 
 interface SpecialMenuModalProps {
   visible: boolean;
@@ -30,15 +32,17 @@ export function SpecialMenuModal({ visible, onClose, onAdd, theme }: SpecialMenu
       <View style={styles.modalOverlay}>
         <View style={[styles.modalContent, { backgroundColor: theme.background }]}>
           <Text style={[styles.modalTitle, { color: theme.text }]}>Add Special Food Item</Text>
-          <Text style={[styles.modalSubtitle, { color: theme.text + "80" }]}>Add a special item to the menu with custom pricing</Text>
-          <TextInput style={[styles.input, { borderColor: theme.border, color: theme.text }]} placeholder="Food Name *" placeholderTextColor={theme.text + "80"} value={name} onChangeText={setName} />
-          <TextInput style={[styles.input, { borderColor: theme.border, color: theme.text }]} placeholder="Description" placeholderTextColor={theme.text + "80"} value={description} onChangeText={setDescription} multiline numberOfLines={3} />
-          <TextInput style={[styles.input, { borderColor: theme.border, color: theme.text }]} placeholder="Price (₹) *" placeholderTextColor={theme.text + "80"} value={price} onChangeText={setPrice} keyboardType="numeric" />
-          <TextInput style={[styles.input, { borderColor: theme.border, color: theme.text }]} placeholder="Category * (e.g., Main Course, Appetizer, Special)" placeholderTextColor={theme.text + "80"} value={category} onChangeText={setCategory} />
-          <View style={styles.modalButtons}>
-            <Pressable onPress={onClose} style={[styles.modalButton, { backgroundColor: theme.muted }]}><Text style={[styles.modalButtonText, { color: theme.text }]}>Cancel</Text></Pressable>
-            <Pressable onPress={handleAdd} style={[styles.modalButton, { backgroundColor: theme.primary }]}><Text style={styles.modalButtonText}>Add Special</Text></Pressable>
-          </View>
+          <Text style={[styles.modalSubtitle, { color: withOpacity(theme.text, 0.5) }]}>Add a special item to the menu with custom pricing</Text>
+          <TextInput style={[styles.input, { borderColor: theme.border, color: theme.text }]} placeholder="Food Name *" placeholderTextColor={withOpacity(theme.text, 0.5)} value={name} onChangeText={setName} />
+          <TextInput style={[styles.input, { borderColor: theme.border, color: theme.text }]} placeholder="Description" placeholderTextColor={withOpacity(theme.text, 0.5)} value={description} onChangeText={setDescription} multiline numberOfLines={3} />
+          <TextInput style={[styles.input, { borderColor: theme.border, color: theme.text }]} placeholder="Price (₹) *" placeholderTextColor={withOpacity(theme.text, 0.5)} value={price} onChangeText={setPrice} keyboardType="numeric" />
+          <TextInput style={[styles.input, { borderColor: theme.border, color: theme.text }]} placeholder="Category * (e.g., Main Course, Appetizer, Special)" placeholderTextColor={withOpacity(theme.text, 0.5)} value={category} onChangeText={setCategory} />
+          <ModalButtons
+            onCancel={onClose}
+            onConfirm={handleAdd}
+            confirmLabel="Add Special"
+            theme={theme}
+          />
         </View>
       </View>
     </Modal>
@@ -51,7 +55,5 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 20, fontWeight: "700", marginBottom: 8 },
   modalSubtitle: { fontSize: 14, marginBottom: 16 },
   input: { borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 16, marginBottom: 8 },
-  modalButtons: { flexDirection: "row", justifyContent: "flex-end", gap: 12, marginTop: 16 },
-  modalButton: { paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8 },
-  modalButtonText: { color: "#FFF", fontWeight: "600", fontSize: 16 },
 });
+

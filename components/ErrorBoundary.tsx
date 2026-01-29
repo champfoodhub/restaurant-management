@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-
 import React, { Component, ErrorInfo, ReactNode } from "react";
+import { Text, TouchableOpacity, View } from "react-native";
+import { componentStyles } from "../styles";
 import { Loggers } from "../utils/logger";
 
 interface Props {
@@ -75,38 +75,38 @@ export default class ErrorBoundary extends Component<Props, State> {
 
       // Default error fallback UI
       return (
-        <View style={styles.container}>
-          <View style={styles.errorCard}>
+        <View style={componentStyles.errorBoundary.container}>
+          <View style={componentStyles.errorBoundary.errorCard}>
             <Ionicons name="warning" size={64} color="#EF4444" />
 
-            <Text style={styles.title}>Oops! Something went wrong</Text>
+            <Text style={componentStyles.errorBoundary.title}>Oops! Something went wrong</Text>
 
-            <Text style={styles.message}>
+            <Text style={componentStyles.errorBoundary.message}>
               {this.state.error?.message || "An unknown error occurred"}
             </Text>
 
             {__DEV__ && this.state.errorInfo && (
-              <View style={styles.devInfo}>
-                <Text style={styles.devTitle}>Development Info:</Text>
-                <Text style={styles.stackTrace}>
+              <View style={componentStyles.errorBoundary.devInfo}>
+                <Text style={componentStyles.errorBoundary.devTitle}>Development Info:</Text>
+                <Text style={componentStyles.errorBoundary.stackTrace}>
                   {this.state.error?.stack || "No stack trace available"}
                 </Text>
               </View>
             )}
 
-            <View style={styles.buttonContainer}>
+            <View style={componentStyles.errorBoundary.buttonContainer}>
               <TouchableOpacity
-                style={[styles.button, styles.retryButton]}
+                style={[componentStyles.errorBoundary.button, componentStyles.errorBoundary.retryButton]}
                 onPress={this.handleRetry}
               >
-                <Text style={styles.buttonText}>Retry</Text>
+                <Text style={componentStyles.errorBoundary.buttonText}>Retry</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.button, styles.reloadButton]}
+                style={[componentStyles.errorBoundary.button, componentStyles.errorBoundary.reloadButton]}
                 onPress={this.handleReload}
               >
-                <Text style={styles.buttonText}>Reload App</Text>
+                <Text style={componentStyles.errorBoundary.buttonText}>Reload App</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -117,82 +117,6 @@ export default class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#F9FAFB",
-    padding: 20,
-  },
-  errorCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 24,
-    alignItems: "center",
-    maxWidth: 400,
-    width: "100%",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#1F2937",
-    marginTop: 16,
-    textAlign: "center",
-  },
-  message: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginTop: 8,
-    textAlign: "center",
-  },
-  devInfo: {
-    marginTop: 16,
-    padding: 12,
-    backgroundColor: "#F3F4F6",
-    borderRadius: 8,
-    width: "100%",
-  },
-  devTitle: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#4B5563",
-    marginBottom: 4,
-  },
-  stackTrace: {
-    fontSize: 10,
-    color: "#9CA3AF",
-    fontFamily: __DEV__ ? "monospace" : undefined,
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    marginTop: 24,
-    gap: 12,
-  },
-  button: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    minWidth: 120,
-  },
-  retryButton: {
-    backgroundColor: "#7C3AED",
-  },
-  reloadButton: {
-    backgroundColor: "#6B7280",
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});
 
 /**
  * Higher-order component to wrap components with error boundary

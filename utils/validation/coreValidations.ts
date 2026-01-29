@@ -3,7 +3,6 @@
  * Basic validation functions for form inputs and data sanitization
  */
 
-
 export interface ValidationResult {
   isValid: boolean;
   error?: string;
@@ -141,10 +140,6 @@ export function validateCustom(
   return { isValid: true };
 }
 
-// ============================================================================
-// Date of Birth Validation
-// ============================================================================
-
 /**
  * Validate date of birth format (DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY)
  */
@@ -178,10 +173,6 @@ export function validateDOB(value: string): ValidationResult {
 
   return { isValid: true };
 }
-
-// ============================================================================
-// Phone Formatting
-// ============================================================================
 
 /**
  * Format phone number for display

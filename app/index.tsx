@@ -9,12 +9,13 @@ import {
   useColorScheme,
 } from "react-native";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import useSafeNavigation from "../hooks/useSafeNavigation";
 import { loadUserFromStorage } from "../store/authSlice";
 import { Flavor, loadFlavorFromStorage, saveFlavorToStorage, setFlavor } from "../store/flavorSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { toggleTheme } from "../store/themeSlice";
+import { appStyles } from "../styles";
 import { getTheme } from "../theme";
 import { Loggers } from "../utils/logger";
 
@@ -64,15 +65,26 @@ export default function Home() {
   }, [dispatch]);
 
   // Redirect to menu if already logged in using safe navigation
+  // Use ref to prevent re-navigation loop when loading new user
+  const navigationAttempted = useRef(false);
   useEffect(() => {
-    // Only redirect after loading is complete
-    if (!isLoading && isLoggedIn) {
-      // Add a small delay to ensure smooth transition
+    // Only redirect after loading is complete and haven't attempted yet
+    if (!isLoading && isLoggedIn && !navigationAttempted.current) {
+      navigationAttempted.current = true;
+      // Add a longer delay to ensure navigator is fully mounted and ready
+      // This prevents the "action not handled" warning
       const timer = setTimeout(() => {
-        safeReplace("menu");
-      }, 100);
+        Loggers.navigation.info("Auto-redirecting logged-in user to menu");
+        // Use setTimeout again to ensure the navigator is completely ready
+        setTimeout(() => {
+          safeReplace("menu");
+        }, 200);
+      }, 500);
       
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        navigationAttempted.current = false;
+      };
     }
   }, [isLoading, isLoggedIn, safeReplace]);
 
@@ -88,19 +100,19 @@ export default function Home() {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[appStyles.home.container, { backgroundColor: theme.background }]}>
         <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background }}>
+    <View style={[appStyles.home.container, { backgroundColor: theme.background }]}>
       <ImageBackground
         source={{
           uri: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5",
         }}
-        style={styles.hero}
+        style={appStyles.home.hero}
       >
         <LinearGradient
           colors={[
@@ -111,27 +123,27 @@ export default function Home() {
           style={StyleSheet.absoluteFill}
         />
 
-        <View style={styles.heroContent}>
-          <Text style={[styles.brand, { color: "#FFF" }]}>
+        <View style={appStyles.home.heroContent}>
+          <Text style={[appStyles.home.brand, { color: "#FFF" }]}>
             FoodHub
           </Text>
 
-          <Text style={[styles.tagline, { color: theme.accent }]}>
+          <Text style={[appStyles.home.tagline, { color: theme.accent }]}>
             Fresh ingredients. Bold flavors.
           </Text>
 
           {/* Flavor Selector */}
-          <View style={styles.flavorSelector}>
-            <Text style={[styles.flavorLabel, { color: "#FFF" }]}>
+          <View style={appStyles.home.flavorSelector}>
+            <Text style={[appStyles.home.flavorLabel, { color: "#FFF" }]}>
               Select Mode:
             </Text>
-            <View style={styles.flavorButtons}>
+            <View style={appStyles.home.flavorButtons}>
               {FLAVOR_OPTIONS.map((option) => (
                 <Pressable
                   key={option.id}
                   onPress={() => handleFlavorChange(option.id)}
                   style={[
-                    styles.flavorButton,
+                    appStyles.home.flavorButton,
                     { 
                       backgroundColor: flavor === option.id ? option.color : "rgba(255,255,255,0.15)",
                       borderColor: flavor === option.id ? option.color : "rgba(255,255,255,0.3)",
@@ -139,7 +151,7 @@ export default function Home() {
                   ]}
                 >
                   <Text style={[
-                    styles.flavorButtonText,
+                    appStyles.home.flavorButtonText,
                     { color: flavor === option.id ? "#FFF" : "rgba(255,255,255,0.7)" },
                   ]}>
                     {option.name}
@@ -150,17 +162,17 @@ export default function Home() {
           </View>
 
           <Pressable
-            style={[styles.cta, { backgroundColor: theme.primary }]}
+            style={[appStyles.home.cta, { backgroundColor: theme.primary }]}
             onPress={handleOrderNow}
           >
-            <Text style={styles.ctaText}>Order Now</Text>
+            <Text style={appStyles.home.ctaText}>Order Now</Text>
           </Pressable>
 
           <Pressable
+            style={appStyles.home.themeToggle}
             onPress={() => dispatch(toggleTheme())}
-            style={{ marginTop: 12 }}
           >
-            <Text style={{ color: "#FFF", opacity: 0.7 }}>
+            <Text style={[appStyles.home.themeToggleText, { color: "#FFF" }]}>
               Toggle {resolvedMode === "dark" ? "Light" : "Dark"}
             </Text>
           </Pressable>
@@ -169,61 +181,4 @@ export default function Home() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  hero: {
-    height: "100%",
-    justifyContent: "flex-end",
-  },
-  heroContent: {
-    padding: 24,
-  },
-  brand: {
-    fontSize: 42,
-    fontWeight: "800",
-  },
-  tagline: {
-    fontSize: 18,
-    marginTop: 12,
-  },
-  flavorSelector: {
-    marginTop: 24,
-  },
-  flavorLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 8,
-    opacity: 0.8,
-  },
-  flavorButtons: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  flavorButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  flavorButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  cta: {
-    marginTop: 24,
-    paddingVertical: 14,
-    borderRadius: 14,
-    alignItems: "center",
-  },
-  ctaText: {
-    color: "#FFF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});
 

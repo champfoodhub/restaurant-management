@@ -1,6 +1,7 @@
 import { Pressable, Text, View } from "react-native";
 import { addItem, removeItem } from "../store/cartSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { componentStyles } from "../styles";
 
 export function MenuCard({
   id,
@@ -20,53 +21,45 @@ export function MenuCard({
 
   return (
     <View
-      style={{
-        backgroundColor: theme.background,
-        borderWidth: 1,
-        borderColor: theme.primary,
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
-      }}
+      style={[
+        componentStyles.menuCard.container,
+        {
+          backgroundColor: theme.background,
+          borderColor: theme.primary,
+        },
+      ]}
     >
       <Text style={{ color: theme.text, fontSize: 18 }}>{name}</Text>
 
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          marginTop: 12,
-        }}
-      >
+      <View style={componentStyles.menuCard.content}>
         <Pressable
           onPress={() => dispatch(removeItem(id))}
-          style={{
-            padding: 8,
-            borderRadius: 8,
-            backgroundColor: theme.primary,
-            opacity: qty === 0 ? 0.4 : 1,
-          }}
+          style={[
+            componentStyles.menuCard.pressable,
+            {
+              backgroundColor: theme.primary,
+              opacity: qty === 0 ? 0.4 : 1,
+            },
+          ]}
         >
           <Text style={{ color: theme.text }}>−</Text>
         </Pressable>
 
         <Text
-          style={{
-            color: theme.text,
-            marginHorizontal: 16,
-            fontSize: 16,
-          }}
+          style={[
+            componentStyles.menuCard.quantity,
+            { color: theme.text },
+          ]}
         >
           {qty}
         </Text>
 
         <Pressable
           onPress={() => dispatch(addItem({ id, name, price }))}
-          style={{
-            padding: 8,
-            borderRadius: 8,
-            backgroundColor: theme.primary,
-          }}
+          style={[
+            componentStyles.menuCard.pressable,
+            { backgroundColor: theme.primary },
+          ]}
         >
           <Text style={{ color: theme.text }}>+</Text>
         </Pressable>

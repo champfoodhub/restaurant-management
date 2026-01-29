@@ -3,6 +3,15 @@
  * Functions for sanitizing input to prevent XSS and other attacks
  */
 
+import {
+  validateDOB,
+  validateEmail,
+  validateMinLength,
+  validatePhone,
+  validateRequired
+} from "./coreValidations";
+import { validateField } from "./formValidators";
+
 /**
  * Sanitize string input to prevent XSS attacks
  * Note: We intentionally do NOT trim the value to allow users to enter
@@ -59,10 +68,6 @@ export function getInputValidationState(
 ): ValidationState {
   if (value === '') return 'default';
 
-  // Import here to avoid circular dependency
-  const core = require("./coreValidations");
-  const { validateField } = require("./formValidators");
-
   const result = validateField(value, 'Field', rules);
   return result.isValid ? 'valid' : 'invalid';
 }
@@ -101,16 +106,6 @@ export function validateSingleField(
   field: string,
   value: string
 ): string | undefined {
-  // Import here to avoid circular dependency
-  const {
-    validateRequired,
-    validateMinLength,
-    validatePhone,
-    validateAddress,
-    validateDOB,
-    validateEmail,
-  } = require("./coreValidations");
-
   switch (field) {
     case 'firstName': {
       const requiredResult = validateRequired(value.trim(), 'First name');
