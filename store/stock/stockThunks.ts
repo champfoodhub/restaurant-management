@@ -1,14 +1,13 @@
 /**
  * Stock Thunks
- * Async operations for stock management
+ * Async operations for stock management using API
  */
 
 import { createAsyncThunk } from '@reduxjs/toolkit';
+import { stockApi } from '../../apiService';
 import { getCurrentFlavor } from '../../config/config';
-import { updateStock as dbUpdateStock, getAllStock, setInStock, setOutOfStock } from '../../database/stock';
-import { Loggers } from '../../utils/logger';
 
-// Generate unique ID
+// Generate unique ID (fallback for local creation)
 const generateId = (): string => {
   return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
@@ -19,15 +18,14 @@ const generateId = (): string => {
 export const loadStock = createAsyncThunk(
   'stock/loadStock',
   async () => {
-    const branchId = getCurrentFlavor(); // Use flavor as branch identifier
-    const stockData = await getAllStock(branchId);
-    Loggers.menu.info(`Loaded stock for branch: ${branchId}`);
+    const branchId = getCurrentFlavor();
+    const stockData = await stockApi.getAll(branchId);
     return stockData;
   }
 );
 
 /**
- * Update stock for a menu item (Branch only)
+ * Update stock for a menu item
  */
 export const updateStockItem = createAsyncThunk(
   'stock/updateStock',
@@ -42,23 +40,18 @@ export const updateStockItem = createAsyncThunk(
   ) => {
     try {
       const branchId = getCurrentFlavor();
-      await dbUpdateStock(menuItemId, branchId, quantity);
-      
-      const now = new Date().toISOString();
-      
-      Loggers.menu.info(`Updated stock for ${menuItemName}: ${inStock ? 'In Stock' : 'Out of Stock'}`);
+      const result = await stockApi.update(menuItemId, branchId, quantity);
       
       return {
         id: generateId(),
-        menuItemId,
+        menuItemId: result.menuItemId,
         menuItemName,
-        quantity,
-        inStock,
-        lastUpdated: now,
+        quantity: result.quantity,
+        inStock: result.inStock,
+        lastUpdated: new Date().toISOString(),
       };
-    } catch (error) {
-      Loggers.menu.error('Failed to update stock', error);
-      return rejectWithValue('Failed to update stock');
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to update stock');
     }
   }
 );
@@ -78,26 +71,18 @@ export const toggleStockStatus = createAsyncThunk(
   ) => {
     try {
       const branchId = getCurrentFlavor();
-      const newStatus = !currentStatus;
-      const quantity = newStatus ? 100 : 0; // Default quantity based on status
-      
-      await dbUpdateStock(menuItemId, branchId, quantity);
-      
-      const now = new Date().toISOString();
-      
-      Loggers.menu.info(`Toggled stock for ${menuItemName}: ${newStatus ? 'In Stock' : 'Out of Stock'}`);
+      const result = await stockApi.toggle(menuItemId, branchId);
       
       return {
         id: generateId(),
-        menuItemId,
+        menuItemId: result.menuItemId,
         menuItemName,
-        quantity,
-        inStock: newStatus,
-        lastUpdated: now,
+        quantity: result.quantity,
+        inStock: result.inStock,
+        lastUpdated: new Date().toISOString(),
       };
-    } catch (error) {
-      Loggers.menu.error('Failed to toggle stock status', error);
-      return rejectWithValue('Failed to toggle stock status');
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to toggle stock status');
     }
   }
 );
@@ -113,23 +98,18 @@ export const setInStockStatus = createAsyncThunk(
   ) => {
     try {
       const branchId = getCurrentFlavor();
-      await setInStock(menuItemId, branchId);
-      
-      const now = new Date().toISOString();
-      
-      Loggers.menu.info(`Set ${menuItemName} as in stock`);
+      const result = await stockApi.setInStock(menuItemId, branchId);
       
       return {
         id: generateId(),
-        menuItemId,
+        menuItemId: result.menuItemId,
         menuItemName,
-        quantity: 100,
+        quantity: result.quantity,
         inStock: true,
-        lastUpdated: now,
+        lastUpdated: new Date().toISOString(),
       };
-    } catch (error) {
-      Loggers.menu.error('Failed to set in stock', error);
-      return rejectWithValue('Failed to set in stock');
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to set in stock');
     }
   }
 );
@@ -145,24 +125,18 @@ export const setOutOfStockStatus = createAsyncThunk(
   ) => {
     try {
       const branchId = getCurrentFlavor();
-      await setOutOfStock(menuItemId, branchId);
-      
-      const now = new Date().toISOString();
-      
-      Loggers.menu.info(`Set ${menuItemName} as out of stock`);
+      const result = await stockApi.setOutOfStock(menuItemId, branchId);
       
       return {
         id: generateId(),
-        menuItemId,
+        menuItemId: result.menuItemId,
         menuItemName,
-        quantity: 0,
+        quantity: result.quantity,
         inStock: false,
-        lastUpdated: now,
+        lastUpdated: new Date().toISOString(),
       };
-    } catch (error) {
-      Loggers.menu.error('Failed to set out of stock', error);
-      return rejectWithValue('Failed to set out of stock');
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to set out of stock');
     }
   }
 );
-

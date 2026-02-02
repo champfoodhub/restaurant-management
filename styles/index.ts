@@ -352,6 +352,7 @@ const componentStylesRaw = {
       borderRadius: 20,
       marginRight: 8,
       gap: 4,
+      minWidth: 70,
     },
     icon: {
       marginBottom: -1,

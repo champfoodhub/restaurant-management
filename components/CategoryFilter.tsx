@@ -1,8 +1,36 @@
 import { Ionicons } from "@expo/vector-icons";
 import { memo, useCallback } from "react";
-import { Pressable, ScrollView, Text } from "react-native";
-import { componentStyles } from "../styles";
+import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
 import { CATEGORY_ICONS } from "../utils/menuConstants";
+
+const styles = StyleSheet.create({
+  categoryContainer: {
+    maxHeight: 48,
+    marginBottom: 8,
+  },
+  categoryContent: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    marginRight: 8,
+    gap: 4,
+    minWidth: 70,
+  },
+  icon: {
+    marginBottom: -1,
+  },
+  chipText: {
+    fontWeight: "600",
+    fontSize: 12,
+  },
+});
 
 interface CategoryFilterProps {
   categories: string[];
@@ -35,7 +63,7 @@ const CategoryChip = memo(function CategoryChip({
     <Pressable
       onPress={onPress}
       style={[
-        componentStyles.categoryChip.chip,
+        styles.chip,
         { backgroundColor },
       ]}
     >
@@ -43,9 +71,9 @@ const CategoryChip = memo(function CategoryChip({
         name={iconName as any}
         size={16}
         color={textColor}
-        style={componentStyles.categoryChip.icon}
+        style={styles.icon}
       />
-      <Text style={[componentStyles.categoryChip.text, { color: textColor }]}>
+      <Text style={[styles.chipText, { color: textColor }]}>
         {category}
       </Text>
     </Pressable>
@@ -69,8 +97,8 @@ export const CategoryFilter = memo(function CategoryFilter({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      style={componentStyles.categoryFilter.categoryContainer}
-      contentContainerStyle={componentStyles.categoryFilter.categoryContent}
+      style={styles.categoryContainer}
+      contentContainerStyle={styles.categoryContent}
     >
       {/* All category */}
       <CategoryChip

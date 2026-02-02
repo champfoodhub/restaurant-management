@@ -1,7 +1,33 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { memo } from "react";
-import { Pressable, Text, View } from "react-native";
-import { componentStyles } from "../../styles";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+
+const styles = StyleSheet.create({
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    marginRight: 8,
+    gap: 4,
+    minWidth: 70,
+  },
+  icon: {
+    marginBottom: -1,
+  },
+  chipText: {
+    fontWeight: "600",
+    fontSize: 12,
+  },
+  container: {
+    flexDirection: "row",
+    paddingHorizontal: 16,
+    gap: 8,
+    marginBottom: 8,
+  },
+});
 
 interface CategoryChipProps {
   /** Category name to display */
@@ -40,7 +66,7 @@ export const CategoryChip = memo(function CategoryChip({
     <Pressable
       onPress={onPress}
       style={[
-        componentStyles.categoryChip.chip,
+        styles.chip,
         {
           backgroundColor: isSelected ? theme.primary : theme.muted,
         },
@@ -50,11 +76,11 @@ export const CategoryChip = memo(function CategoryChip({
         name={icon as any}
         size={16}
         color={isSelected ? "#FFF" : theme.text}
-        style={componentStyles.categoryChip.icon}
+        style={styles.icon}
       />
       <Text
         style={[
-          componentStyles.categoryChip.text,
+          styles.chipText,
           { color: isSelected ? "#FFF" : theme.text },
         ]}
       >
@@ -98,7 +124,7 @@ export const CategoryFilterBar = memo(function CategoryFilterBar({
   if (categories.length === 0) return null;
 
   return (
-    <View style={[componentStyles.categoryChip.container, style]}>
+    <View style={[styles.container, style]}>
       {/* All category chip */}
       <CategoryChip
         label="All"

@@ -5,8 +5,8 @@ import * as thunks from './menu/menuThunks';
 
 // Re-export thunks with backward-compatible names
 export const {
-  initializeMenuDatabase,
   loadMenuItems,
+  getCurrentSeasonalMenu,
   addMenuItemAsync,
   updateMenuItemAsync,
   deleteMenuItemAsync,
@@ -14,7 +14,6 @@ export const {
   addSeasonalMenuAsync,
   updateSeasonalMenuAsync,
   deleteSeasonalMenuAsync,
-  refreshCurrentSeasonalMenu,
   assignItemToSeasonalMenuAsync,
   removeItemFromSeasonalMenuAsync,
 } = thunks;
@@ -51,20 +50,6 @@ const menuSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Initialize database
-    builder
-      .addCase(thunks.initializeMenuDatabase.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(thunks.initializeMenuDatabase.fulfilled, (state) => {
-        state.loading = false;
-      })
-      .addCase(thunks.initializeMenuDatabase.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Failed to initialize database';
-      });
-
     // Load menu items
     builder
       .addCase(thunks.loadMenuItems.pending, (state) => {
@@ -191,11 +176,10 @@ const menuSlice = createSlice({
         state.error = action.payload as string;
       });
 
-    // Refresh current seasonal menu
+    // Get current seasonal menu
     builder
-      .addCase(thunks.refreshCurrentSeasonalMenu.fulfilled, (state, action) => {
-        state.currentSeasonalMenu = action.payload.currentMenu;
-        state.activeSeasonalMenus = action.payload.activeMenus;
+      .addCase(thunks.getCurrentSeasonalMenu.fulfilled, (state, action) => {
+        state.currentSeasonalMenu = action.payload;
       });
 
     // Assign item to seasonal menu
@@ -229,7 +213,7 @@ const menuSlice = createSlice({
       })
       .addCase(thunks.removeItemFromSeasonalMenuAsync.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.items.findIndex((item: MenuItem) => item.id === action.payload);
+        const index = state.items.findIndex((item: MenuItem) => item.id === action.payload.menuItemId);
         if (index !== -1) {
           state.items[index] = {
             ...state.items[index],
