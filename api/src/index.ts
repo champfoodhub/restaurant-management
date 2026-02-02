@@ -15,8 +15,27 @@ const app = express();
 const HOST = process.env.HOST || '0.0.0.0';
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
-// Middleware
-app.use(cors());
+// Get allowed origins from environment (comma-separated for multiple origins)
+const allowedOrigins = process.env.CORS_ORIGINS?.split(',') || ['*'];
+
+// CORS configuration
+const corsOptions: cors.CorsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl requests)
+    // In production, you should restrict this to your specific domains
+    if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+};
+
+// Apply CORS middleware
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Request logging middleware
