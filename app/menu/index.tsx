@@ -23,6 +23,7 @@ import {
   deleteSeasonalMenu,
   selectCategories,
 } from "../../store/menuSlice";
+import { toggleTheme } from "../../store/themeSlice";
 import { getTheme } from "../../theme";
 import { withOpacity } from "../../utils/colorUtils";
 import { Loggers } from "../../utils/logger";
@@ -243,7 +244,15 @@ export default function MenuPage() {
           contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
           renderItem={renderMenuItem}
           ListHeaderComponent={
-            <MenuHeader currentSeasonalMenu={currentSeasonalMenu} user={user} isLoggedIn={isLoggedIn} theme={theme} resolvedMode={resolvedMode} />
+            <MenuHeader 
+              currentSeasonalMenu={currentSeasonalMenu} 
+              user={user} 
+              isLoggedIn={isLoggedIn} 
+              theme={theme} 
+              resolvedMode={resolvedMode}
+              onToggleTheme={isBranch() ? () => dispatch(toggleTheme()) : undefined}
+              onAddMenuItem={isHQ() ? () => setShowAddMenuModal(true) : undefined}
+            />
           }
         />
       )}

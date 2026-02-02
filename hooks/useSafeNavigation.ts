@@ -1,161 +1,134 @@
-import type { NavigationProp } from "@react-navigation/native";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef } from "react";
-
 import { Loggers } from "../utils/logger";
 
-type RootStackParamList = {
-  index: undefined;
-  order: undefined;
-  menu: undefined;
-  cart: undefined;
-};
-
 /**
- * Safe navigation hook that prevents navigation timing issues
- * This helps avoid the "specified child already has a parent" Android crash
- * by ensuring navigation only happens after the current screen is fully mounted.
- * Also prevents rapid consecutive navigations that can cause screen flickering.
- * 
- * @param delay - Minimum delay in ms before navigation (default: 200ms)
- * @returns Safe navigation functions
+ * Safe navigation hook for Expo Router
+ * - Prevents rapid navigation crashes
+ * - Queues navigation calls
+ * - Uses ONLY expo-router (no react-navigation mix)
  */
 export function useSafeNavigation(delay: number = 200) {
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const route = useRoute();
+  const router = useRouter();
+
   const lastNavTime = useRef<number>(0);
   const isNavigating = useRef<boolean>(false);
   const navigationQueue = useRef<Array<() => void>>([]);
-  const processedRoute = useRef<string>(route.name);
 
-  // Update processed route when it changes
+  /** Normalize route to expo-router path */
+  const normalizeRoute = (route: string) => {
+    // already a path
+    if (route.startsWith("/")) return route;
+    // convert "menu" -> "/menu"
+    return `/${route}`;
+  };
+
+  /** Process queued navigation actions safely */
   useEffect(() => {
-    processedRoute.current = route.name;
-  }, [route.name]);
+    if (navigationQueue.current.length === 0 || isNavigating.current) return;
 
-  // Check if we're currently on the expected route
-  const isCurrentRoute = useCallback((routeName: string): boolean => {
-    return processedRoute.current === routeName;
-  }, []);
+    const processQueue = async () => {
+      isNavigating.current = true;
 
-  // Process navigation queue with delay to prevent rapid navigation issues
-  useEffect(() => {
-    if (navigationQueue.current.length > 0 && !isNavigating.current) {
-      const processQueue = async () => {
-        isNavigating.current = true;
-        
-        while (navigationQueue.current.length > 0) {
-          const navAction = navigationQueue.current.shift();
-          if (navAction) {
-            const now = Date.now();
-            if (now - lastNavTime.current >= delay) {
-              lastNavTime.current = now;
-              navAction();
-              // Wait after each navigation to prevent screen transition issues
-              await new Promise(resolve => setTimeout(resolve, 100));
-            }
-          }
+      while (navigationQueue.current.length > 0) {
+        const action = navigationQueue.current.shift();
+        if (!action) continue;
+
+        const now = Date.now();
+        if (now - lastNavTime.current >= delay) {
+          lastNavTime.current = now;
+          action();
+          await new Promise((res) => setTimeout(res, 100));
         }
-        
-        isNavigating.current = false;
-      };
+      }
 
-      processQueue();
-    }
-  }, [navigationQueue, delay]);
+      isNavigating.current = false;
+    };
 
-  // Safe replace - adds to queue to prevent rapid navigation
+    processQueue();
+  }, [delay]);
+
+  /** Safe replace */
   const safeReplace = useCallback(
-    (screen: keyof RootStackParamList | string) => {
+    (route: string) => {
+      const path = normalizeRoute(route);
       const now = Date.now();
-      
-      // If we're already navigating, queue this action
+
       if (isNavigating.current || now - lastNavTime.current < delay) {
-        navigationQueue.current.push(() => {
-          Loggers.navigation.info(`Queued replace navigation to ${screen}`);
-          (navigation as any).replace(screen as string);
-        });
+        Loggers.navigation.info(`Queued replace → ${path}`);
+        navigationQueue.current.push(() => router.replace(path));
         return;
       }
 
       lastNavTime.current = now;
-      Loggers.navigation.info(`Navigating to ${screen}`);
-      // Use type assertion to access the replace method
-      (navigation as any).replace(screen as string);
+      Loggers.navigation.info(`Replace → ${path}`);
+      router.replace(path);
     },
-    [navigation, delay]
+    [router, delay]
   );
 
-  // Safe push - adds to queue to prevent rapid navigation
+  /** Safe push */
   const safePush = useCallback(
-    (screen: keyof RootStackParamList | string) => {
+    (route: string) => {
+      const path = normalizeRoute(route);
       const now = Date.now();
-      
-      // If we're already navigating, queue this action
+
       if (isNavigating.current || now - lastNavTime.current < delay) {
-        navigationQueue.current.push(() => {
-          Loggers.navigation.info(`Queued push navigation to ${screen}`);
-          (navigation as any).push(screen as string);
-        });
+        Loggers.navigation.info(`Queued push → ${path}`);
+        navigationQueue.current.push(() => router.push(path));
         return;
       }
 
       lastNavTime.current = now;
-      Loggers.navigation.info(`Navigating to ${screen}`);
-      // Use type assertion to access the push method
-      (navigation as any).push(screen as string);
+      Loggers.navigation.info(`Push → ${path}`);
+      router.push(path);
     },
-    [navigation, delay]
+    [router, delay]
   );
 
-  // Safe navigate - navigates only if mounted
+  /** Safe navigate */
   const safeNavigate = useCallback(
-    (screen: keyof RootStackParamList | string) => {
+    (route: string) => {
+      const path = normalizeRoute(route);
       const now = Date.now();
-      
-      // If we're already navigating, queue this action
+
       if (isNavigating.current || now - lastNavTime.current < delay) {
-        navigationQueue.current.push(() => {
-          Loggers.navigation.info(`Queued navigate to ${screen}`);
-          navigation.navigate(screen as never);
-        });
+        Loggers.navigation.info(`Queued navigate → ${path}`);
+        navigationQueue.current.push(() => router.navigate(path));
         return;
       }
 
       lastNavTime.current = now;
-      Loggers.navigation.info(`Navigating to ${screen}`);
-      navigation.navigate(screen as never);
+      Loggers.navigation.info(`Navigate → ${path}`);
+      router.navigate(path);
     },
-    [navigation, delay]
+    [router, delay]
   );
 
-  // Safe go back - only if can go back
+  /** Safe go back */
   const safeGoBack = useCallback(() => {
     const now = Date.now();
-    
-    // Prevent rapid go back actions
+
     if (now - lastNavTime.current < delay) {
-      Loggers.navigation.warn("Skipping go back - too soon after last navigation");
+      Loggers.navigation.warn("GoBack skipped (too fast)");
       return;
     }
-    
-    if (navigation.canGoBack()) {
+
+    if (router.canGoBack()) {
       lastNavTime.current = now;
-      Loggers.navigation.info("Going back");
-      navigation.goBack();
+      Loggers.navigation.info("Go back");
+      router.back();
     } else {
-      Loggers.navigation.warn("Cannot go back - no previous screen");
+      Loggers.navigation.warn("Cannot go back");
     }
-  }, [navigation, delay]);
+  }, [router, delay]);
 
   return {
     safeReplace,
     safePush,
     safeNavigate,
     safeGoBack,
-    isCurrentRoute,
   };
 }
 
 export default useSafeNavigation;
-

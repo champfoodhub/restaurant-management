@@ -1,3 +1,12 @@
+// Polyfill for Array.prototype.toReversed() (ES2023)
+// This must be loaded BEFORE expo/metro-config is required
+// because Metro internally uses toReversed() during config loading
+if (!Array.prototype.toReversed) {
+  Array.prototype.toReversed = function() {
+    return this.slice().reverse();
+  };
+}
+
 const { getDefaultConfig } = require('expo/metro-config');
 
 const config = getDefaultConfig(__dirname);
