@@ -223,15 +223,6 @@ export default function MenuPage() {
       <DbErrorBanner dbError={dbError} />
       <SeasonalBanner currentSeasonalMenu={currentSeasonalMenu} seasonalMenuManager={seasonalMenuManager} />
 
-      {categories.length > 0 && (
-        <CategoryFilter 
-          categories={categories} 
-          selectedCategory={selectedCategory} 
-          onSelectCategory={setSelectedCategory} 
-          theme={theme} 
-        />
-      )}
-
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.primary} />
@@ -244,15 +235,25 @@ export default function MenuPage() {
           contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
           renderItem={renderMenuItem}
           ListHeaderComponent={
-            <MenuHeader 
-              currentSeasonalMenu={currentSeasonalMenu} 
-              user={user} 
-              isLoggedIn={isLoggedIn} 
-              theme={theme} 
-              resolvedMode={resolvedMode}
-              onToggleTheme={isBranch() ? () => dispatch(toggleTheme()) : undefined}
-              onAddMenuItem={isHQ() ? () => setShowAddMenuModal(true) : undefined}
-            />
+            <>
+              <MenuHeader 
+                currentSeasonalMenu={currentSeasonalMenu} 
+                user={user} 
+                isLoggedIn={isLoggedIn} 
+                theme={theme} 
+                resolvedMode={resolvedMode}
+                onToggleTheme={isBranch() ? () => dispatch(toggleTheme()) : undefined}
+                onAddMenuItem={isHQ() ? () => setShowAddMenuModal(true) : undefined}
+              />
+              {categories.length > 0 && (
+                <CategoryFilter 
+                  categories={categories} 
+                  selectedCategory={selectedCategory} 
+                  onSelectCategory={setSelectedCategory} 
+                  theme={theme} 
+                />
+              )}
+            </>
           }
         />
       )}
